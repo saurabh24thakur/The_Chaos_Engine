@@ -13,118 +13,174 @@ import {
   User,
   Trash2,
 } from "lucide-react";
-import { UserButton } from "@clerk/nextjs";
+import { UserButton, useAuth } from "@clerk/nextjs";
 
 export default function Workspace() {
   const router = useRouter();
+  const { userId, isLoaded } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeChatId, setActiveChatId] = useState(1);
+  const [chats, setChats] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [activeChatId, setActiveChatId] = useState(null);
   const [inputText, setInputText] = useState("");
-
-  // Simulated conversations
-  const [chats, setChats] = useState([
-    {
-      id: 1,
-      title: "chat 1: Authentication Router Setup",
-      messages: [
-        { sender: "user", text: "Create an HTTPOnly cookie login router" },
-        { sender: "agent", text: "I have configured the JWT authentication route in src/app/api/auth/route.js. Active tests verified: 4 passed." },
-      ],
-    },
-    {
-      id: 2,
-      title: "chat 2: Vector Embeddings Indexing",
-      messages: [
-        { sender: "user", text: "How is the memory data indexed?" },
-        { sender: "agent", text: "Context vectors are embedded using 1536-dimensional models and cached in Pinespace memory clusters." },
-      ],
-    },
-    {
-      id: 3,
-      title: "chat 3: Investor PPT Generation",
-      messages: [
-        { sender: "user", text: "Design a pitch slide outlining our agent nodes" },
-        { sender: "agent", text: "Investor deck completed. Slide structure: Root Ingestion -> QTPI Router -> 6 Execution sub-agents." },
-      ],
-    },
-    {
-      id: 4,
-      title: "chat 4: System Observability SLA",
-      messages: [
-        { sender: "user", text: "Show current pipeline performance stats" },
-        { sender: "agent", text: "Average telemetry latency: 120ms. Sandbox CPU usage: 48%. Memory load: 62%." },
-      ],
-    },
-  ]);
 
   const messagesEndRef = useRef(null);
 
+  // 1. Fetch chats on load
+  useEffect(() => {
+    if (isLoaded && userId) {
+      fetchChats();
+    }
+  }, [isLoaded, userId]);
+
+  // 2. Fetch messages when activeChatId changes
+  useEffect(() => {
+    if (activeChatId) {
+      fetchMessages(activeChatId);
+    } else {
+      setMessages([]);
+    }
+  }, [activeChatId]);
+
+  // 3. Scroll to bottom when messages change
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [chats, activeChatId]);
+  }, [messages]);
 
-  const handleSend = (e) => {
-    e.preventDefault();
-    if (!inputText.trim()) return;
-
-    const userMessage = { sender: "user", text: inputText };
-    const userPrompt = inputText;
-
-    // Append user message to active chat
-    setChats((prevChats) =>
-      prevChats.map((c) =>
-        c.id === activeChatId
-          ? { ...c, messages: [...c.messages, userMessage] }
-          : c
-      )
-    );
-
-    setInputText("");
-
-    // Simulate Agent response
-    setTimeout(() => {
-      const agentMessage = {
-        sender: "agent",
-        text: `[Chaos Engine OS] Received prompt: "${userPrompt}". Dispatching pipeline parameters to sub-agent swarms. Resolution complete.`,
-      };
-
-      setChats((prevChats) =>
-        prevChats.map((c) =>
-          c.id === activeChatId
-            ? { ...c, messages: [...c.messages, agentMessage] }
-            : c
-        )
-      );
-    }, 1000);
-  };
-
-  const createNewChat = () => {
-    const newId = chats.length > 0 ? Math.max(...chats.map((c) => c.id)) + 1 : 1;
-    const newChat = {
-      id: newId,
-      title: `chat ${newId}: New Swarm Workspace`,
-      messages: [
-        { sender: "agent", text: "Ready. Tell me what agent swarms we should spin up today." },
-      ],
-    };
-    setChats((prev) => [...prev, newChat]);
-    setActiveChatId(newId);
-  };
-
-  const deleteChat = (id, e) => {
-    e.stopPropagation();
-    const remaining = chats.filter((c) => c.id !== id);
-    setChats(remaining);
-    if (activeChatId === id && remaining.length > 0) {
-      setActiveChatId(remaining[0].id);
+  const fetchChats = async () => {
+    try {
+      const res = await fetch(`http://localhost:8000/api/chat/chat/${userId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setChats(data);
+        if (data.length > 0 && !activeChatId) {
+          setActiveChatId(data[0]._id);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching chats:", err);
     }
   };
 
-  const currentChat = chats.find((c) => c.id === activeChatId) || {
+  const fetchMessages = async (chatId) => {
+    try {
+      const res = await fetch(`http://localhost:8000/api/chat/messages/${chatId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setMessages(data);
+      }
+    } catch (err) {
+      console.error("Error fetching messages:", err);
+    }
+  };
+
+  const handleSend = async (e) => {
+    e.preventDefault();
+    if (!inputText.trim() || !activeChatId) return;
+
+    const userPrompt = inputText;
+    setInputText("");
+
+    // Optimistically add user message
+    const tempUserMsg = { _id: Date.now().toString(), role: "user", content: userPrompt };
+    setMessages((prev) => [...prev, tempUserMsg]);
+
+    try {
+      const res = await fetch(`http://localhost:8000/api/chat/messages/${activeChatId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: "user", content: userPrompt }),
+      });
+      if (res.ok) {
+        const userMsg = await res.json();
+        // Replace temp message with actual db message
+        setMessages((prev) => prev.map((m) => m._id === tempUserMsg._id ? userMsg : m));
+      }
+    } catch (err) {
+      console.error("Error sending user message:", err);
+    }
+
+    // Simulate Agent response
+    setTimeout(async () => {
+      const agentReplyText = `[Chaos Engine OS] Received prompt: "${userPrompt}". Dispatching pipeline parameters to sub-agent swarms. Resolution complete.`;
+      try {
+        const res = await fetch(`http://localhost:8000/api/chat/messages/${activeChatId}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ role: "assistant", content: agentReplyText }),
+        });
+        if (res.ok) {
+          const agentMsg = await res.json();
+          setMessages((prev) => [...prev, agentMsg]);
+        }
+      } catch (err) {
+        console.error("Error sending agent response:", err);
+      }
+    }, 1000);
+  };
+
+  const createNewChat = async () => {
+    if (!userId) return;
+    try {
+      const res = await fetch("http://localhost:8000/api/chat/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+      if (res.ok) {
+        const newChat = await res.json();
+        const defaultTitle = `chat ${chats.length + 1}: New Swarm Workspace`;
+
+        // Rename the chat
+        await fetch(`http://localhost:8000/api/chat/chat/${newChat._id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: defaultTitle }),
+        });
+        newChat.title = defaultTitle;
+
+        // Insert welcome message
+        const welcomeText = "Ready. Tell me what agent swarms we should spin up today.";
+        await fetch(`http://localhost:8000/api/chat/messages/${newChat._id}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ role: "assistant", content: welcomeText }),
+        });
+
+        setChats((prev) => [newChat, ...prev]);
+        setActiveChatId(newChat._id);
+      }
+    } catch (err) {
+      console.error("Error creating new chat:", err);
+    }
+  };
+
+  const deleteChat = async (id, e) => {
+    e.stopPropagation();
+    try {
+      const res = await fetch(`http://localhost:8000/api/chat/chat/${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        const remaining = chats.filter((c) => c._id !== id);
+        setChats(remaining);
+        if (activeChatId === id) {
+          if (remaining.length > 0) {
+            setActiveChatId(remaining[0]._id);
+          } else {
+            setActiveChatId(null);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error deleting chat:", err);
+    }
+  };
+
+  const currentChat = chats.find((c) => c._id === activeChatId) || {
     title: "No Chat Selected",
-    messages: [],
   };
 
   return (
@@ -166,10 +222,10 @@ export default function Workspace() {
         <div className="flex-1 overflow-y-auto p-2 min-w-[280px] flex flex-col gap-1.5">
           {chats.map((c) => (
             <div
-              key={c.id}
-              onClick={() => setActiveChatId(c.id)}
+              key={c._id}
+              onClick={() => setActiveChatId(c._id)}
               className={`group flex items-center justify-between p-3.5 rounded-xl cursor-pointer transition-all ${
-                activeChatId === c.id
+                activeChatId === c._id
                   ? "bg-white text-black font-semibold"
                   : "text-zinc-400 hover:bg-white/5 hover:text-white"
               }`}
@@ -178,9 +234,9 @@ export default function Workspace() {
                 {c.title.split(":")[0]}
               </span>
               <button
-                onClick={(e) => deleteChat(c.id, e)}
+                onClick={(e) => deleteChat(c._id, e)}
                 className={`p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/10 hover:text-red-500 ${
-                  activeChatId === c.id ? "text-zinc-600 hover:text-red-600" : "text-zinc-500"
+                  activeChatId === c._id ? "text-zinc-600 hover:text-red-600" : "text-zinc-500"
                 }`}
               >
                 <Trash2 className="h-3.5 w-3.5" />
@@ -222,7 +278,7 @@ export default function Workspace() {
 
             {/* Header Chat Title */}
             <div className="px-4 py-1.5 rounded-lg border border-white/10 bg-zinc-900/30 text-xs font-mono font-semibold max-w-xs sm:max-w-md truncate">
-              {currentChat.title}
+              {currentChat.title || "No Chat Selected"}
             </div>
           </div>
 
@@ -235,11 +291,11 @@ export default function Workspace() {
         {/* Message Feed Container */}
         <div className="flex-1 overflow-y-auto p-6 md:p-10 flex flex-col gap-6 max-w-4xl mx-auto w-full">
           <AnimatePresence mode="popLayout">
-            {currentChat.messages.map((msg, index) => {
-              const isAgent = msg.sender === "agent";
+            {messages.map((msg, index) => {
+              const isAgent = msg.role !== "user";
               return (
                 <motion.div
-                  key={index}
+                  key={msg._id || index}
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
@@ -261,15 +317,15 @@ export default function Workspace() {
                       : "bg-white text-black font-semibold select-text"
                   }`}>
                     {/* Syntax highlight wrap */}
-                    {msg.text.includes("```") ? (
+                    {msg.content && msg.content.includes("```") ? (
                       <div className="flex flex-col gap-2">
-                        <p>{msg.text.split("```")[0]}</p>
+                        <p>{msg.content.split("```")[0]}</p>
                         <pre className="font-mono text-[10px] leading-relaxed bg-[#050505] p-3 rounded-lg border border-white/10 text-zinc-300 overflow-x-auto select-text">
-                          <code>{msg.text.split("```")[1].replace("javascript\n", "")}</code>
+                          <code>{msg.content.split("```")[1].replace("javascript\n", "")}</code>
                         </pre>
                       </div>
                     ) : (
-                      <p className="whitespace-pre-line">{msg.text}</p>
+                      <p className="whitespace-pre-line">{msg.content || ""}</p>
                     )}
                   </div>
                 </motion.div>
