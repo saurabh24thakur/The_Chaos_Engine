@@ -19,6 +19,8 @@ import {
   Search,
   Clock,
   Coins,
+  CheckCircle2,
+  Loader2,
 } from "lucide-react";
 
 export default function Container() {

@@ -13,6 +13,7 @@ import {
   User,
   Trash2,
 } from "lucide-react";
+import { UserButton } from "@clerk/nextjs";
 
 export default function Workspace() {
   const router = useRouter();
@@ -226,10 +227,8 @@ export default function Workspace() {
           </div>
 
           {/* Right side: Profile Avatar */}
-          <div className="relative">
-            <div className="h-8 w-8 rounded-full border border-white/10 bg-zinc-800 flex items-center justify-center cursor-pointer">
-              <span className="text-[10px] font-bold text-zinc-400">CE</span>
-            </div>
+          <div className="flex items-center justify-center">
+            <UserButton afterSignOutUrl="/" />
           </div>
         </div>
 
