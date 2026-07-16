@@ -22,6 +22,7 @@ app.use(compression());
 app.use("/api/auth", authRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/agent", agentRoutes);
+app.use("/api/orchestrator", agentRoutes);
 
 
 
