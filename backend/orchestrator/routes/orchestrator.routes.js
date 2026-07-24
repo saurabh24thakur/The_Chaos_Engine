@@ -1,10 +1,9 @@
-import express from "express";
+import { Router } from "express";
+
 import { executeChat } from "../controller/orchestrator.controller.js";
 
-const router = express.Router();
+const router = Router();
 
-router.route("/chat")
-    .get(executeChat)
-    .post(executeChat);
+router.post("/chat", executeChat);
 
 export default router;

@@ -1,17 +1,42 @@
+import ProviderManager from "../provider/provider.manager.js";
+
 export const executeChat = async (req, res) => {
 
     try {
 
-        res.json({
+        const { prompt } = req.body;
+
+        const { provider, model } = ProviderManager.getProvider("chat");
+
+        const answer = await provider.generate({
+
+            model,
+
+            messages: [
+                {
+                    role: "user",
+                    content: prompt
+                }
+            ]
+
+        });
+
+        return res.json({
+
             success: true,
-            message: "Orchestrator is working."
+
+            answer
+
         });
 
     } catch (error) {
 
-        res.status(500).json({
+        return res.status(500).json({
+
             success: false,
-            error: error.message
+
+            message: error.message
+
         });
 
     }
