@@ -41,5 +41,5 @@ app.get("/", (req, res) => {
 
 app.listen(PORT, () => {        
 
-    console.log(`Auth server is running on port ${PORT}`);
+    console.log(`Chat server is running on port ${PORT}`);
 })

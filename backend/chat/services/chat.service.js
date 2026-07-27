@@ -1,58 +1,39 @@
-import Chat from "../models/chat.model.js";
-import Message from "../models/message.model.js";
+import axios from "axios";
+import env from "../config/env.js";
 
+class ChatService {
 
-export const createChat = async (userId) => {
+    async getMessages(chatId) {
 
-    return await Chat.create({
+        try {
 
-        userId
+            const response = await axios.get(
+                `${env.CHAT_SERVICE_URL}/messages/${chatId}`
+            );
 
-    });
+            return response.data;
 
-};
+        } catch (error) {
 
-export const getChats = async (userId) => {
+            if (error.response?.status === 404) {
 
-    return await Chat.find({
+                return [];
 
-        userId
+            }
 
-    }).sort({
+            throw error;
+        }
+    }
 
-        updatedAt: -1
+    async saveMessage(chatId, message) {
 
-    });
+        return await axios.post(
+            `${env.CHAT_SERVICE_URL}/messages/${chatId}`,
+            message
+        );
 
-};
+    }
 
-export const getChat = async (id) => {
+}
 
-    return await Chat.findById(id);
-
-};
-
-export const renameChat = async (id, title) => {
-
-    return await Chat.findByIdAndUpdate(
-
-        id,
-
-        { title },
-
-        { new: true }
-
-    );
-
-};
-
-
-export const deleteChat = async (id) => {
-
-    await Message.deleteMany({
-        chatId: id,
-    });
-
-    return await Chat.findByIdAndDelete(id);
-
-};
+export default new ChatService();
