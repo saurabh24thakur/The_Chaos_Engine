@@ -1,21 +1,16 @@
-import {
-    START,
-    END,
-    StateGraph
-} from "@langchain/langgraph";
+import { StateGraph, START, END } from "@langchain/langgraph";
 
 import { ChatState } from "./state.js";
-
-import { chatNode } from "../agent/chat.agent.js";
+import { chatAgent } from "./agent/chat.agent.js";
 
 const builder = new StateGraph(ChatState);
 
-builder.addNode("chat", chatNode);
+builder.addNode("chatAgent", chatAgent);
 
-builder.addEdge(START, "chat");
+builder.addEdge(START, "chatAgent");
 
-builder.addEdge("chat", END);
+builder.addEdge("chatAgent", END);
 
-const graph = builder.compile();
+const chatGraph = builder.compile();
 
-export default graph;
+export default chatGraph;

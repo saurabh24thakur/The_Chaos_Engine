@@ -24,7 +24,85 @@ export default function Workspace() {
   const [activeChatId, setActiveChatId] = useState(null);
   const [inputText, setInputText] = useState("");
 
-  const messagesEndRef = useRef(null);
+  const feedRef = useRef(null);
+
+  const renderInlineStyles = (text) => {
+    if (!text) return "";
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return <strong key={i} className="font-bold text-white">{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
+  };
+
+  const renderMessageContent = (content = "") => {
+    if (!content) return null;
+
+    // Split by code blocks first
+    const parts = content.split(/(```[\s\S]*?```)/g);
+
+    return parts.map((part, index) => {
+      // Check if this part is a code block
+      if (part.startsWith("```") && part.endsWith("```")) {
+        const lines = part.slice(3, -3).trim().split("\n");
+        let language = "";
+        let code = lines.join("\n");
+        
+        // If the first line is just a language (like javascript, html, python)
+        if (lines.length > 0 && /^[a-zA-Z0-9_-]+$/.test(lines[0].trim())) {
+          language = lines[0].trim();
+          code = lines.slice(1).join("\n");
+        }
+
+        return (
+          <div key={index} className="my-3 flex flex-col gap-1.5">
+            {language && (
+              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider block ml-1 select-none">
+                {language}
+              </span>
+            )}
+            <pre className="font-mono text-[10px] leading-relaxed bg-[#050505] p-3 rounded-lg border border-white/10 text-zinc-300 overflow-x-auto select-text">
+              <code>{code}</code>
+            </pre>
+          </div>
+        );
+      }
+
+      // Render standard markdown for normal text (split by newlines)
+      const lines = part.split("\n");
+      return (
+        <div key={index} className="flex flex-col gap-1">
+          {lines.map((line, lineIdx) => {
+            // Check for headings: # Heading
+            if (line.startsWith("# ")) {
+              return <h3 key={lineIdx} className="text-sm font-bold text-white mt-2 mb-1">{line.slice(2)}</h3>;
+            }
+            if (line.startsWith("## ")) {
+              return <h4 key={lineIdx} className="text-xs font-bold text-white mt-2 mb-1">{line.slice(3)}</h4>;
+            }
+
+            // Check for bullet lists: - Item
+            if (line.startsWith("- ")) {
+              return (
+                <ul key={lineIdx} className="list-disc pl-4 text-xs">
+                  <li>{renderInlineStyles(line.slice(2))}</li>
+                </ul>
+              );
+            }
+
+            // Standard paragraph
+            return (
+              <p key={lineIdx} className="whitespace-pre-line min-h-[1em]">
+                {renderInlineStyles(line)}
+              </p>
+            );
+          })}
+        </div>
+      );
+    });
+  };
 
   // 1. Fetch chats on load
   useEffect(() => {
@@ -44,8 +122,11 @@ export default function Workspace() {
 
   // 3. Scroll to bottom when messages change
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    if (feedRef.current) {
+      feedRef.current.scrollTo({
+        top: feedRef.current.scrollHeight,
+        behavior: "smooth"
+      });
     }
   }, [messages]);
 
@@ -87,38 +168,99 @@ export default function Workspace() {
     const tempUserMsg = { _id: Date.now().toString(), role: "user", content: userPrompt };
     setMessages((prev) => [...prev, tempUserMsg]);
 
-    try {
-      const res = await fetch(`http://localhost:8000/api/chat/messages/${activeChatId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role: "user", content: userPrompt }),
-      });
-      if (res.ok) {
-        const userMsg = await res.json();
-        // Replace temp message with actual db message
-        setMessages((prev) => prev.map((m) => m._id === tempUserMsg._id ? userMsg : m));
-      }
-    } catch (err) {
-      console.error("Error sending user message:", err);
+    // 1. Resolve workspace agent and cleaned prompt from slash command
+    let workspace = "chat";
+    let cleanedPrompt = userPrompt;
+    
+    const match = userPrompt.match(/^\/([a-zA-Z0-9_-]+)\s(.*)/s);
+    if (match) {
+      workspace = match[1];
+      cleanedPrompt = match[2];
+    } else if (userPrompt.startsWith("/")) {
+      workspace = userPrompt.slice(1).trim();
+      cleanedPrompt = "";
     }
 
-    // Simulate Agent response
-    setTimeout(async () => {
-      const agentReplyText = `[Chaos Engine OS] Received prompt: "${userPrompt}". Dispatching pipeline parameters to sub-agent swarms. Resolution complete.`;
-      try {
-        const res = await fetch(`http://localhost:8000/api/chat/messages/${activeChatId}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ role: "assistant", content: agentReplyText }),
-        });
-        if (res.ok) {
-          const agentMsg = await res.json();
-          setMessages((prev) => [...prev, agentMsg]);
-        }
-      } catch (err) {
-        console.error("Error sending agent response:", err);
+    // 2. Add temporary assistant message
+    const tempAgentMsgId = Date.now().toString() + "-agent";
+    const tempAgentMsg = { _id: tempAgentMsgId, role: "assistant", content: "" };
+    setMessages((prev) => [...prev, tempAgentMsg]);
+
+    try {
+      // 3. Request streaming response from orchestrator service
+      const res = await fetch(`http://localhost:8000/api/orchestrator/chat/stream`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workspace,
+          chatId: activeChatId,
+          prompt: cleanedPrompt,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to start stream");
       }
-    }, 1000);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulatedText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+        
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const dataStr = line.slice(6).trim();
+            if (dataStr === "[DONE]") {
+              break;
+            }
+            try {
+              const parsed = JSON.parse(dataStr);
+              if (parsed.token) {
+                accumulatedText += parsed.token;
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m._id === tempAgentMsgId
+                      ? { ...m, content: accumulatedText }
+                      : m
+                  )
+                );
+              } else if (parsed.error) {
+                console.error("Stream error:", parsed.error);
+                accumulatedText += `\n[Error: ${parsed.error}]`;
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m._id === tempAgentMsgId
+                      ? { ...m, content: accumulatedText }
+                      : m
+                  )
+                );
+              }
+            } catch (e) {
+              // Ignore partial JSON parsing errors
+            }
+          }
+        }
+      }
+
+      // 4. Refetch messages from DB to get the official message ID and final content
+      await fetchMessages(activeChatId);
+
+    } catch (err) {
+      console.error("Error streaming agent response:", err);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m._id === tempAgentMsgId
+            ? { ...m, content: "Error: Failed to fetch streaming response from orchestrator." }
+            : m
+        )
+      );
+    }
   };
 
   const createNewChat = async () => {
@@ -289,7 +431,7 @@ export default function Workspace() {
         </div>
 
         {/* Message Feed Container */}
-        <div className="flex-1 overflow-y-auto p-6 md:p-10 flex flex-col gap-6 max-w-4xl mx-auto w-full">
+        <div ref={feedRef} className="flex-1 overflow-y-auto p-6 md:p-10 flex flex-col gap-6 max-w-4xl mx-auto w-full">
           <AnimatePresence mode="popLayout">
             {messages.map((msg, index) => {
               const isAgent = msg.role !== "user";
@@ -316,23 +458,13 @@ export default function Workspace() {
                       ? "bg-zinc-900/40 border-white/10 text-zinc-200 select-text"
                       : "bg-white text-black font-semibold select-text"
                   }`}>
-                    {/* Syntax highlight wrap */}
-                    {msg.content && msg.content.includes("```") ? (
-                      <div className="flex flex-col gap-2">
-                        <p>{msg.content.split("```")[0]}</p>
-                        <pre className="font-mono text-[10px] leading-relaxed bg-[#050505] p-3 rounded-lg border border-white/10 text-zinc-300 overflow-x-auto select-text">
-                          <code>{msg.content.split("```")[1].replace("javascript\n", "")}</code>
-                        </pre>
-                      </div>
-                    ) : (
-                      <p className="whitespace-pre-line">{msg.content || ""}</p>
-                    )}
+                    {renderMessageContent(msg.content)}
                   </div>
                 </motion.div>
               );
             })}
           </AnimatePresence>
-          <div ref={messagesEndRef} />
+          {/* Scroll bottom target handled by feedRef */}
         </div>
 
         {/* Message Input Form */}

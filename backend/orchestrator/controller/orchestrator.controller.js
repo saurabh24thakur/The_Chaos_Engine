@@ -1,83 +1,36 @@
 import GraphRegistry from "../graph/graph.registry.js";
-import ChatService from "../services/chat.service.js";
 
-export const executeChat = async (req, res) => {
+export const chat = async (req, res) => {
 
     try {
 
-        const { chatId, prompt } = req.body;
+        const {
 
-        if (!chatId) {
-
-            return res.status(400).json({
-
-                success: false,
-
-                message: "chatId is required"
-
-            });
-
-        }
-
-        if (!prompt) {
-
-            return res.status(400).json({
-
-                success: false,
-
-                message: "prompt is required"
-
-            });
-
-        }
-
-        // Fetch previous conversation
-
-        const messages = await ChatService.getMessages(chatId);
-
-        // Add latest user message
-
-        messages.push({
-
-            role: "user",
-
-            content: prompt
-
-        });
-
-        // Get Graph
-
-        const graph = GraphRegistry.getGraph("chat");
-
-        // Invoke LangGraph
-
-        const result = await graph.invoke({
-
-            workspace: "chat",
-
+            workspace,
             chatId,
+            prompt,
 
-            messages,
+        } = req.body;
 
-            response: ""
+        const graph =
+            GraphRegistry.getGraph(workspace);
 
-        });
+        const result =
+            await graph.invoke({
 
-        // Save assistant message
+                workspace,
 
-        await ChatService.saveMessage(chatId, {
+                chatId,
 
-            role: "assistant",
+                prompt,
 
-            content: result.response
+            });
 
-        });
-
-        return res.json({
+        res.json({
 
             success: true,
 
-            answer: result.response
+            response: result.response,
 
         });
 
@@ -85,15 +38,91 @@ export const executeChat = async (req, res) => {
 
     catch (error) {
 
-        console.log(error);
+        console.error(error);
 
-        return res.status(500).json({
+        res.status(500).json({
 
             success: false,
 
-            message: error.message
+            message: error.message,
 
         });
+
+    }
+
+};
+
+export const chatStream = async (req, res) => {
+
+    try {
+
+        const {
+
+            workspace,
+
+            chatId,
+
+            prompt,
+
+        } = req.body;
+
+        const graph =
+            GraphRegistry.getGraph(workspace);
+
+        res.setHeader("Content-Type", "text/event-stream");
+        res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("Connection", "keep-alive");
+
+        await graph.invoke({
+
+            workspace,
+
+            chatId,
+
+            prompt,
+
+            onToken: (token) => {
+
+                res.write(`data: ${JSON.stringify({ token })}\n\n`);
+                if (typeof res.flush === "function") {
+                    res.flush();
+                }
+
+            }
+
+        });
+
+        res.write("data: [DONE]\n\n");
+        if (typeof res.flush === "function") {
+            res.flush();
+        }
+        res.end();
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        if (!res.headersSent) {
+
+            res.status(500).json({
+
+                success: false,
+
+                message: error.message,
+
+            });
+
+        } else {
+
+            res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+            if (typeof res.flush === "function") {
+                res.flush();
+            }
+            res.end();
+
+        }
 
     }
 

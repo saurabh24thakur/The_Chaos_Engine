@@ -1,15 +1,19 @@
 class BaseProvider {
 
-    constructor(apiKey) {
-        this.apiKey = apiKey;
+    constructor(name) {
+        this.name = name;
     }
 
-    async generate() {
-        throw new Error("generate() not implemented");
+    async generate({ model, messages }) {
+        throw new Error(
+            `${this.name} must implement generate().`
+        );
     }
 
-    async stream() {
-        throw new Error("stream() not implemented");
+    async *stream({ model, messages }) {
+        throw new Error(
+            `${this.name} must implement stream().`
+        );
     }
 
 }

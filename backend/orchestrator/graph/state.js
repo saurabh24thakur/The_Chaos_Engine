@@ -12,6 +12,10 @@ export const ChatState = Annotation.Root({
 
     messages: Annotation(),
 
-    response: Annotation()
+    response: Annotation(),
+
+    onToken: Annotation()
 
 });
+
+export const AgentState = ChatState;

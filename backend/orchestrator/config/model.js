@@ -1,29 +1,44 @@
 const MODELS = {
 
     chat: {
+
         provider: "google",
-        model: "gemini-2.5-flash"
+
+        model: "gemini-2.5-flash",
+
     },
 
     coding: {
+
         provider: "groq",
-        model: "deepseek-r1-distill-llama-70b"
+
+        model: "llama-3.3-70b-versatile",
+
     },
 
-    pdf: {
+    search: {
+
         provider: "google",
-        model: "gemini-2.5-flash"
+
+        model: "gemini-2.5-flash",
+
     },
 
     ppt: {
+
         provider: "google",
-        model: "gemini-2.5-flash"
+
+        model: "gemini-2.5-flash",
+
     },
 
-    image: {
-        provider: "huggingface",
-        model: "black-forest-labs/FLUX.1-dev"
-    }
+    pdf: {
+
+        provider: "groq",
+
+        model: "llama-3.3-70b-versatile",
+
+    },
 
 };
 

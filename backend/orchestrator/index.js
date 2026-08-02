@@ -13,11 +13,22 @@ const app = express();
 
 app.use(cors());
 app.use(helmet());
-app.use(compression());
+app.use(
+  compression({
+    filter: (req, res) => {
+      const contentType = res.getHeader("content-type") || "";
+      if (contentType.includes("text/event-stream")) {
+        return false;
+      }
+      return compression.filter(req, res);
+    },
+  })
+);
 
 app.use(express.json());
 
 app.use('/api/orchestrator', orchestratorRoutes);
+app.use('/orchestrator', orchestratorRoutes);
 app.use('/', orchestratorRoutes);
 
 

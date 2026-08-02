@@ -2,22 +2,34 @@ import chatGraph from "./chat.graph.js";
 
 class GraphRegistry {
 
-    static getGraph(workspace) {
+    constructor() {
 
-        switch (workspace) {
+        this.graphs = {
 
-            case "chat":
-                return chatGraph;
+            chat: chatGraph,
 
-            default:
-                throw new Error(
-                    `Workspace '${workspace}' not found.`
-                );
+        };
+
+    }
+
+    getGraph(workspace) {
+
+        const graph = this.graphs[workspace];
+
+        if (!graph) {
+
+            throw new Error(
+
+                `Graph '${workspace}' not found.`
+
+            );
 
         }
+
+        return graph;
 
     }
 
 }
 
-export default GraphRegistry;
+export default new GraphRegistry();

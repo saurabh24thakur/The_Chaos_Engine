@@ -1,49 +1,62 @@
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-
-import BaseProvider from "./base.provider.js";
-
+import { GoogleGenAI } from "@google/genai";
 import env from "../config/env.js";
+import BaseProvider from "./base.provider.js";
 
 class GoogleProvider extends BaseProvider {
 
     constructor() {
-        super(env.GOOGLE_API_KEY);
+        super("Google");
+
+        this.client = new GoogleGenAI({
+            apiKey: env.GOOGLE_API_KEY,
+        });
     }
 
+    /**
+     * Generate AI response
+     */
     async generate({ model, messages }) {
 
-        const llm = new ChatGoogleGenerativeAI({
+        // Convert chat history into a single prompt
+        const prompt = messages
+            .map(msg => `${msg.role}: ${msg.content}`)
+            .join("\n");
 
-            apiKey: this.apiKey,
-
-            model,
-
-            temperature: 0.7
-
-        });
-
-        const response = await llm.invoke(messages);
-
-        return response.content;
-
-    }
-
-    async stream({ model, messages }) {
-
-        const llm = new ChatGoogleGenerativeAI({
-
-            apiKey: this.apiKey,
+        const response = await this.client.models.generateContent({
 
             model,
 
-            temperature: 0.7
+            contents: prompt,
 
         });
 
-        return llm.stream(messages);
+        return response.text;
 
     }
 
+    /**
+     * Stream AI response
+     */
+    async *stream({ model, messages }) {
+
+        // Convert chat history into a single prompt
+        const prompt = messages
+            .map(msg => `${msg.role}: ${msg.content}`)
+            .join("\n");
+
+        const responseStream = await this.client.models.generateContentStream({
+
+            model,
+
+            contents: prompt,
+
+        });
+
+        for await (const chunk of responseStream) {
+            yield chunk.text;
+        }
+
+    }
 }
 
 export default GoogleProvider;
