@@ -5,7 +5,10 @@ import {
 } from "@langchain/langgraph";
 
 import { ChatState } from "./state.js";
-import { searchTool } from "./tools/search.tool.js";
+
+import {
+    codingAgent,
+} from "../agent/coding.agent.js";
 
 
 const builder =
@@ -13,23 +16,25 @@ const builder =
 
 
 builder.addNode(
-    "searchAgent",
-    searchTool
+    "codingAgent",
+    codingAgent
 );
+
 
 builder.addEdge(
     START,
-    "searchAgent"
+    "codingAgent"
 );
 
+
 builder.addEdge(
-    "searchAgent",
+    "codingAgent",
     END
 );
 
 
-const searchGraph =
+const codingGraph =
     builder.compile();
 
 
-export default searchGraph;
+export default codingGraph;
