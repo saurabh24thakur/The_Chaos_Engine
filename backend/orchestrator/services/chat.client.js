@@ -1,0 +1,106 @@
+import axios from "axios";
+
+import env from "../config/env.js";
+
+function getBaseUrl() {
+    if (!env.CHAT_SERVICE_URL) {
+        throw new Error("CHAT_SERVICE_URL is not configured.");
+    }
+
+    return env.CHAT_SERVICE_URL.replace(/\/$/, "");
+}
+
+function normalizeMessage(role, content) {
+    if (
+        role &&
+        typeof role === "object" &&
+        !Array.isArray(role)
+    ) {
+        return {
+            role: role.role,
+            content: role.content,
+        };
+    }
+
+    return {
+        role,
+        content,
+    };
+}
+
+function buildErrorMessage(action, error) {
+    const status = error.response?.status;
+    const detail =
+        error.response?.data?.message ||
+        error.response?.statusText ||
+        error.message ||
+        "Unknown error";
+
+    if (status) {
+        return `${action} failed with status code ${status}: ${detail}`;
+    }
+
+    return `${action} failed: ${detail}`;
+}
+
+export async function getMessages(chatId) {
+    if (!chatId) {
+        throw new Error("chatId is required.");
+    }
+
+    try {
+        const response = await axios.get(
+            `${getBaseUrl()}/messages/${chatId}`
+        );
+
+        if (Array.isArray(response.data)) {
+            return response.data;
+        }
+
+        if (Array.isArray(response.data?.data)) {
+            return response.data.data;
+        }
+
+        return [];
+    } catch (error) {
+        if (error.response?.status === 404) {
+            return [];
+        }
+
+        throw new Error(buildErrorMessage("Get messages", error));
+    }
+}
+
+export async function saveMessage(chatId, role, content) {
+    if (!chatId) {
+        throw new Error("chatId is required.");
+    }
+
+    const message = normalizeMessage(role, content);
+
+    if (!message.role) {
+        throw new Error("Message role is required.");
+    }
+
+    if (message.content === undefined || message.content === null) {
+        throw new Error("Message content is required.");
+    }
+
+    try {
+        const response = await axios.post(
+            `${getBaseUrl()}/messages/${chatId}`,
+            message
+        );
+
+        return response.data;
+    } catch (error) {
+        throw new Error(buildErrorMessage("Save message", error));
+    }
+}
+
+const chatClient = {
+    getMessages,
+    saveMessage,
+};
+
+export default chatClient;

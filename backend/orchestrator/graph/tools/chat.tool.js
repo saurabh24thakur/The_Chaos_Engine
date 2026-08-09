@@ -1,6 +1,9 @@
 import ProviderManager from "../../provider/provider.manager.js";
 
-import chatService from "../../services/chat.service.js";
+import {
+    getMessages,
+    saveMessage,
+} from "../../services/chat.client.js";
 
 
 export async function chatTool(state, config) {
@@ -17,19 +20,17 @@ export async function chatTool(state, config) {
         
         //  Save user message
 
-        await chatService.saveMessage(
+        await saveMessage(
             chatId,
-            {
-                role: "user",
-                content: prompt,
-            }
+            "user",
+            prompt
         );
 
 
         //  Load conversation
 
         const history =
-            await chatService.getMessages(chatId);
+            await getMessages(chatId);
 
         const messages =
             Array.isArray(history) && history.length > 0
@@ -119,14 +120,10 @@ export async function chatTool(state, config) {
         // 6. Save complete assistant answer
         // --------------------------------
 
-        await chatService.saveMessage(
-
+        await saveMessage(
             chatId,
-            {
-                role: "assistant",
-                content: answer,
-            }
-
+            "assistant",
+            answer
         );
 
 

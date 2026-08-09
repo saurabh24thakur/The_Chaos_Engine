@@ -1,5 +1,6 @@
 import chatGraph from "./chat.graph.js";
 import codingGraph from "./coding.graph.js";
+import pptGraph from "./ppt.graph.js";
 import searchGraph from "./search.graph.js";
 
 class GraphRegistry {
@@ -16,6 +17,9 @@ class GraphRegistry {
             
              case "coding":
                 return codingGraph;
+
+            case "ppt":
+                return pptGraph;
 
             default:
                 throw new Error(

@@ -1,5 +1,7 @@
 import ProviderManager from "../provider/provider.manager.js";
-import chatService from "../services/chat.service.js";
+import {
+    saveMessage,
+} from "../services/chat.client.js";
 import searchClient from "../services/search.client.js";
 
 function formatSearchResults(results) {
@@ -40,10 +42,11 @@ export async function searchAgent(state, config) {
             throw new Error("prompt is required.");
         }
 
-        await chatService.saveMessage(chatId, {
-            role: "user",
-            content: prompt,
-        });
+        await saveMessage(
+            chatId,
+            "user",
+            prompt
+        );
 
         const { results } = await searchClient.search(prompt, {
             maxResults: 5,
@@ -94,10 +97,11 @@ export async function searchAgent(state, config) {
             });
         }
 
-        await chatService.saveMessage(chatId, {
-            role: "assistant",
-            content: answer,
-        });
+        await saveMessage(
+            chatId,
+            "assistant",
+            answer
+        );
 
         return {
             ...state,

@@ -1,38 +1,11 @@
-import axios from "axios";
-import env from "../config/env.js";
+import chatClient, {
+    getMessages,
+    saveMessage,
+} from "./chat.client.js";
 
-class ChatService {
+export {
+    getMessages,
+    saveMessage,
+};
 
-    async getMessages(chatId) {
-
-        try {
-            const response = await axios.get(
-                `${env.CHAT_SERVICE_URL}/messages/${chatId}`
-            );
-
-            return response.data;
-
-        } catch (error) {
-
-            if (error.response?.status === 404) {
-                return [];
-            }
-
-            throw error;
-
-        }
-
-    }
-
-    async saveMessage(chatId, message) {
-
-        await axios.post(
-            `${env.CHAT_SERVICE_URL}/messages/${chatId}`,
-            message
-        );
-
-    }
-
-}
-
-export default new ChatService();
+export default chatClient;
