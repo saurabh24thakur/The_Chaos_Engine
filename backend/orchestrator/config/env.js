@@ -8,6 +8,10 @@ export default {
 
     CHAT_SERVICE_URL: process.env.CHAT_SERVICE_URL,
 
+    SEARCH_API_KEY: process.env.SEARCH_API_KEY || process.env.TAVILY_API_KEY,
+
+    TAVILY_API_KEY: process.env.TAVILY_API_KEY,
+
     GOOGLE_API_KEY: process.env.GOOGLE_API_KEY,
 
     GROQ_API_KEY: process.env.GROQ_API_KEY,

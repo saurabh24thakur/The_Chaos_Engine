@@ -1,7 +1,7 @@
 class BaseProvider {
 
-    constructor(apiKey) {
-        this.apiKey = apiKey;
+    constructor(name) {
+        this.name = name;
     }
 
     async generate() {

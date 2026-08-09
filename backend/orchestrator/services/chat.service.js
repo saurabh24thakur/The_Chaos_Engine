@@ -5,22 +5,30 @@ class ChatService {
 
     async getMessages(chatId) {
 
-        const response = await axios.get(
-            `${env.CHAT_SERVICE_URL}/api/chat/${chatId}/messages`
-        );
+        try {
+            const response = await axios.get(
+                `${env.CHAT_SERVICE_URL}/messages/${chatId}`
+            );
 
-        return response.data.data;
+            return response.data;
+
+        } catch (error) {
+
+            if (error.response?.status === 404) {
+                return [];
+            }
+
+            throw error;
+
+        }
 
     }
 
     async saveMessage(chatId, message) {
 
         await axios.post(
-
-            `${env.CHAT_SERVICE_URL}/api/chat/${chatId}/messages`,
-
+            `${env.CHAT_SERVICE_URL}/messages/${chatId}`,
             message
-
         );
 
     }

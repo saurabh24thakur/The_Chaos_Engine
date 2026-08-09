@@ -1,106 +1,101 @@
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 
-import BaseProvider from "./base.provider.js";
+import { HumanMessage, AIMessage, SystemMessage } from "@langchain/core/messages";
 
 import env from "../config/env.js";
+import BaseProvider from "./base.provider.js";
 
 class GoogleProvider extends BaseProvider {
 
     constructor() {
-<<<<<<< Updated upstream
-        super(env.GOOGLE_API_KEY);
-    }
-
-    async generate({ model, messages }) {
-
-        const llm = new ChatGoogleGenerativeAI({
-
-            apiKey: this.apiKey,
-=======
-
         super("Google");
-
-        this.client = new GoogleGenAI({
-            apiKey: env.GOOGLE_API_KEY,
-        });
-
+        this.apiKey = env.GOOGLE_API_KEY;
     }
 
-    /**
-     * Normal AI response
-     */
-    async generate({ model, messages }) {
-
-        const prompt = messages
-            .map(msg => `${msg.role}: ${msg.content}`)
-            .join("\n");
-
-        const response =
-            await this.client.models.generateContent({
->>>>>>> Stashed changes
-
-                model,
-
-<<<<<<< Updated upstream
-            temperature: 0.7
-=======
-                contents: prompt,
->>>>>>> Stashed changes
-
-            });
-
-        const response = await llm.invoke(messages);
-
-        return response.content;
-
-    }
-
-<<<<<<< Updated upstream
-    async stream({ model, messages }) {
-
-        const llm = new ChatGoogleGenerativeAI({
-
+    getClient(model) {
+        return new ChatGoogleGenerativeAI({
             apiKey: this.apiKey,
-=======
-    /**
-     * Streaming AI response
-     */
-    async *stream({ model, messages }) {
+            model: model || "gemini-2.5-flash",
+            temperature: 0.7,
+        });
+    }
 
-        const prompt = messages
-            .map(msg => `${msg.role}: ${msg.content}`)
-            .join("\n");
+    formatMessages(messages) {
+        const safeMessages = Array.isArray(messages) ? messages : [];
 
-        const responseStream =
-            await this.client.models.generateContentStream({
->>>>>>> Stashed changes
-
-                model,
-
-<<<<<<< Updated upstream
-            temperature: 0.7
-=======
-                contents: prompt,
->>>>>>> Stashed changes
-
-            });
-
-<<<<<<< Updated upstream
-        return llm.stream(messages);
-=======
-        for await (const chunk of responseStream) {
-
-            const text = chunk.text;
-
-            if (text) {
-
-                yield text;
-
+        return safeMessages.map((message) => {
+            if (typeof message === "string") {
+                return new HumanMessage(message);
             }
 
-        }
->>>>>>> Stashed changes
+            if (message?.role === "user") {
+                return new HumanMessage(message.content);
+            }
 
+            if (message?.role === "assistant") {
+                return new AIMessage(message.content);
+            }
+
+            if (message?.role === "system") {
+                return new SystemMessage(message.content);
+            }
+
+            return new HumanMessage(message?.content ?? "");
+        });
+    }
+
+    async generate({
+        model,
+        messages,
+    }) {
+        const client = this.getClient(model);
+        const formattedMessages = this.formatMessages(messages);
+
+        if (formattedMessages.length === 0) {
+            throw new Error(
+                "No messages were provided to GoogleProvider.generate()."
+            );
+        }
+
+        const response = await client.invoke(formattedMessages);
+        return response.content;
+    }
+
+    async *stream({
+        model,
+        messages,
+    }) {
+        const client = this.getClient(model);
+        const formattedMessages = this.formatMessages(messages);
+
+        if (formattedMessages.length === 0) {
+            throw new Error(
+                "No messages were provided to GoogleProvider.stream()."
+            );
+        }
+
+        const stream = await client.stream(formattedMessages);
+
+        for await (const chunk of stream) {
+            if (!chunk.content) {
+                continue;
+            }
+
+            if (typeof chunk.content === "string") {
+                yield chunk.content;
+                continue;
+            }
+
+            if (Array.isArray(chunk.content)) {
+                for (const item of chunk.content) {
+                    if (typeof item === "string") {
+                        yield item;
+                    } else if (item?.text) {
+                        yield item.text;
+                    }
+                }
+            }
+        }
     }
 
 }

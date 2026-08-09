@@ -5,6 +5,11 @@ const MODELS = {
         model: "gemini-2.5-flash"
     },
 
+    search: {
+        provider: "google",
+        model: "gemini-2.5-flash"
+    },
+
     coding: {
         provider: "groq",
         model: "deepseek-r1-distill-llama-70b"

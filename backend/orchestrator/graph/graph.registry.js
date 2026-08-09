@@ -1,4 +1,5 @@
 import chatGraph from "./chat.graph.js";
+import searchGraph from "./search.graph.js";
 
 class GraphRegistry {
 
@@ -8,6 +9,9 @@ class GraphRegistry {
 
             case "chat":
                 return chatGraph;
+
+            case "search":
+                return searchGraph;
 
             default:
                 throw new Error(
