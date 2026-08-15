@@ -20,6 +20,8 @@ export const ChatState = Annotation.Root({
 
     searchResults: Annotation(),
 
+    artifact: Annotation(),
+
     response: Annotation()
 
 });

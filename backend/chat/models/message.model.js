@@ -30,6 +30,14 @@ const messageSchema = new mongoose.Schema({
 
         required: true
 
+    },
+
+    artifact: {
+
+        type: mongoose.Schema.Types.Mixed,
+
+        default: null
+
     }
 
 }, {

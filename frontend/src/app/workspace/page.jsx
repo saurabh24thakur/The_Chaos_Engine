@@ -10,13 +10,12 @@ import {
   Send,
   Plus,
   ArrowLeft,
-  Sparkles,
-  User,
   Trash2,
   Settings,
   X,
 } from "lucide-react";
 import { UserButton, useAuth } from "@clerk/nextjs";
+import WorkspaceMessage from "@/components/WorkspaceMessage";
 
 export default function Workspace() {
   const router = useRouter();
@@ -206,7 +205,19 @@ export default function Workspace() {
     setMessages((prev) => [...prev, tempUserMsg]);
 
     // Add empty assistant message optimistically
-    const tempAssistantMsg = { _id: `temp-assistant-${Date.now()}`, role: "assistant", content: "" };
+    const tempAssistantMsg = {
+      _id: `temp-assistant-${Date.now()}`,
+      role: "assistant",
+      content: selectedWorkspace === "ppt" ? "Generating presentation..." : "",
+      artifact: selectedWorkspace === "ppt"
+        ? {
+            type: "pptx",
+            status: "generating",
+            fileName: "Preparing presentation.pptx",
+            downloadUrl: "",
+          }
+        : null,
+    };
     setMessages((prev) => [...prev, tempAssistantMsg]);
 
     try {
@@ -271,6 +282,33 @@ export default function Workspace() {
                 }
                 return updated;
               });
+            } else if (payload && payload.type === "status" && selectedWorkspace === "ppt") {
+              setMessages((prev) => {
+                const updated = [...prev];
+                const last = updated[updated.length - 1];
+                if (last && last._id === tempAssistantMsg._id) {
+                  last.content = payload.message || last.content;
+                  last.artifact = {
+                    ...(last.artifact || {}),
+                    type: "pptx",
+                    status: payload.phase || "generating",
+                  };
+                }
+                return updated;
+              });
+            } else if (payload && payload.type === "artifact" && payload.artifact) {
+              setMessages((prev) => {
+                const updated = [...prev];
+                const last = updated[updated.length - 1];
+                if (last && last._id === tempAssistantMsg._id) {
+                  last.content = "Presentation ready.";
+                  last.artifact = {
+                    ...payload.artifact,
+                    status: "ready",
+                  };
+                }
+                return updated;
+              });
             }
           } catch (err) {
             console.error("Error parsing stream line:", err);
@@ -284,6 +322,13 @@ export default function Workspace() {
         const last = updated[updated.length - 1];
         if (last && last._id === tempAssistantMsg._id) {
           last.content = `Error: ${err.message || "Failed to generate response."}`;
+          if (last.artifact) {
+            last.artifact = {
+              ...last.artifact,
+              status: "error",
+              message: err.message || "Failed to generate response.",
+            };
+          }
         }
         return updated;
       });
@@ -603,32 +648,9 @@ export default function Workspace() {
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
-                    className={`flex items-start gap-3.5 max-w-[85%] ${
-                      isAgent ? "self-start" : "self-end flex-row-reverse"
-                    }`}
+                    className="flex w-full"
                   >
-                    <div className={`h-8 w-8 rounded-full border flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                      isAgent ? "bg-zinc-900 border-white/10 text-white" : "bg-white border-white text-black"
-                    }`}>
-                      {isAgent ? <Sparkles className="h-4 w-4" /> : <User className="h-4 w-4" />}
-                    </div>
-
-                    <div className={`p-5 rounded-2xl border text-xs leading-relaxed ${
-                      isAgent
-                        ? "bg-zinc-900/40 border-white/10 text-zinc-200 select-text"
-                        : "bg-white text-black font-semibold select-text"
-                    }`}>
-                      {msg.content && msg.content.includes("```") ? (
-                        <div className="flex flex-col gap-2">
-                          <p>{msg.content.split("```")[0]}</p>
-                          <pre className="font-mono text-[10px] leading-relaxed bg-[#050505] p-3 rounded-lg border border-white/10 text-zinc-300 overflow-x-auto select-text">
-                            <code>{msg.content.split("```")[1].replace(/^(javascript|js)\n/, "")}</code>
-                          </pre>
-                        </div>
-                      ) : (
-                        <p className="whitespace-pre-line">{msg.content || ""}</p>
-                      )}
-                    </div>
+                    <WorkspaceMessage message={msg} isAgent={isAgent} />
                   </motion.div>
                 );
               })}

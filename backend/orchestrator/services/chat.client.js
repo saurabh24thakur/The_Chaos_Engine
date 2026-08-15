@@ -19,12 +19,14 @@ function normalizeMessage(role, content) {
         return {
             role: role.role,
             content: role.content,
+            artifact: role.artifact ?? null,
         };
     }
 
     return {
         role,
         content,
+        artifact: null,
     };
 }
 
@@ -48,6 +50,7 @@ function sanitizeMessages(messages) {
             content: typeof message.content === "string"
                 ? message.content
                 : String(message.content),
+            artifact: message.artifact ?? null,
         }));
 }
 
@@ -109,7 +112,7 @@ export async function getChat(chatId) {
     }
 }
 
-export async function saveMessage(chatId, role, content) {
+export async function saveMessage(chatId, role, content, artifact = null) {
     if (!chatId) {
         throw new Error("chatId is required.");
     }
@@ -127,7 +130,10 @@ export async function saveMessage(chatId, role, content) {
     try {
         const response = await axios.post(
             `${getBaseUrl()}/messages/${chatId}`,
-            message
+            {
+                ...message,
+                artifact,
+            }
         );
 
         return response.data;

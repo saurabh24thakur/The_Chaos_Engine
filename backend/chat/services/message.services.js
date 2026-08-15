@@ -4,13 +4,15 @@ import Chat from "../models/chat.model.js";
 export const createMessage = async (
     chatId,
     role,
-    content
+    content,
+    artifact = null
 ) => {
 
     const message = await Message.create({
         chatId,
         role,
         content,
+        artifact,
     });
 
     // Update chat timestamp
@@ -26,7 +28,7 @@ export const getMessages = async (chatId) => {
     const messages = await Message.find({
         chatId,
     })
-        .select("role content")
+        .select("role content artifact")
         .lean()
         .sort({
         createdAt: 1,
@@ -35,6 +37,7 @@ export const getMessages = async (chatId) => {
     return messages.map((message) => ({
         role: message.role,
         content: message.content,
+        artifact: message.artifact ?? null,
     }));
 
 };
