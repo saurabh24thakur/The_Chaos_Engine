@@ -48,9 +48,12 @@ export async function chatTool(state, config) {
         const {
             provider,
             model,
-        } = ProviderManager.getProvider(
-            workspace
-        );
+        } = await ProviderManager.getProvider({
+            workspace,
+            provider: state.provider,
+            model: state.model,
+            apiKey: state.apiKey,
+        });
 
 
         let answer = "";
@@ -131,12 +134,16 @@ export async function chatTool(state, config) {
         // 7. Return graph state
         // --------------------------------
 
+        const {
+            apiKey,
+            provider: providerName,
+            model: selectedModel,
+            ...safeState
+        } = state;
+
         return {
-
-            ...state,
-
+            ...safeState,
             response: answer,
-
         };
 
     }
@@ -149,12 +156,16 @@ export async function chatTool(state, config) {
         );
 
 
+        const {
+            apiKey,
+            provider,
+            model,
+            ...safeState
+        } = state;
+
         return {
-
-            ...state,
-
+            ...safeState,
             error: error.message,
-
         };
 
     }

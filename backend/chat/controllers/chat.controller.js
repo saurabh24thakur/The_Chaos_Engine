@@ -113,3 +113,42 @@ export const deleteChat = async (req, res) => {
     }
 
 };
+
+export const getChatConfig = async (req, res) => {
+    try {
+        const config = await chatService.getChatConfig(req.params.chatId);
+
+        if (!config) {
+            return res.status(404).json({
+                message: "Chat not found",
+            });
+        }
+
+        res.json(config);
+    } catch (err) {
+        res.status(500).json({
+            message: err.message,
+        });
+    }
+};
+
+export const updateChatConfig = async (req, res) => {
+    try {
+        const config = await chatService.updateChatConfig(
+            req.params.chatId,
+            req.body
+        );
+
+        if (!config) {
+            return res.status(404).json({
+                message: "Chat not found",
+            });
+        }
+
+        res.json(config);
+    } catch (err) {
+        res.status(500).json({
+            message: err.message,
+        });
+    }
+};

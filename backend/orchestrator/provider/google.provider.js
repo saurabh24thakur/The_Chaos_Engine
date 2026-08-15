@@ -3,19 +3,20 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { HumanMessage, AIMessage, SystemMessage } from "@langchain/core/messages";
 
 import env from "../config/env.js";
+import { getDefaultModel } from "../config/model.js";
 import BaseProvider from "./base.provider.js";
 
 class GoogleProvider extends BaseProvider {
 
-    constructor() {
+    constructor(apiKey = env.GOOGLE_API_KEY) {
         super("Google");
-        this.apiKey = env.GOOGLE_API_KEY;
+        this.apiKey = apiKey;
     }
 
     getClient(model) {
         return new ChatGoogleGenerativeAI({
             apiKey: this.apiKey,
-            model: model || "gemini-2.5-flash",
+            model: model || getDefaultModel("google"),
             temperature: 0.7,
         });
     }

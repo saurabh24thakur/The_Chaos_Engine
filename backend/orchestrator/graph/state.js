@@ -4,6 +4,12 @@ export const ChatState = Annotation.Root({
 
     workspace: Annotation(),
 
+    provider: Annotation(),
+
+    model: Annotation(),
+
+    apiKey: Annotation(),
+
     userId: Annotation(),
 
     chatId: Annotation(),

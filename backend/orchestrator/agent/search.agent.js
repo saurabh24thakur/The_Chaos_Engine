@@ -58,9 +58,12 @@ export async function searchAgent(state, config) {
         const {
             provider,
             model,
-        } = ProviderManager.getProvider(
-            workspace === "search" ? "search" : workspace
-        );
+        } = await ProviderManager.getProvider({
+            workspace,
+            provider: state.provider,
+            model: state.model,
+            apiKey: state.apiKey,
+        });
 
         const messages = [
             {
@@ -103,14 +106,31 @@ export async function searchAgent(state, config) {
             answer
         );
 
+        const {
+            apiKey,
+            provider: providerName,
+            model: selectedModel,
+            ...safeState
+        } = state;
+
         return {
-            ...state,
+            ...safeState,
             response: answer,
             searchResults: results,
         };
     } catch (error) {
         console.error("Search Agent Error:", error);
-        throw error;
+        const {
+            apiKey,
+            provider,
+            model,
+            ...safeState
+        } = state;
+
+        return {
+            ...safeState,
+            error: error.message,
+        };
     }
 }
 

@@ -1,5 +1,26 @@
 import mongoose from "mongoose";
 
+const providerCredentialSchema = new mongoose.Schema(
+  {
+    encryptedKey: {
+      type: String,
+      default: "",
+    },
+    maskedKey: {
+      type: String,
+      default: "",
+    },
+    configured: {
+      type: Boolean,
+      default: false,
+    },
+    updatedAt: {
+      type: Date,
+    },
+  },
+  { _id: false }
+);
+
 const userSchema = new mongoose.Schema(
   {
     // Clerk User ID
@@ -79,6 +100,29 @@ const userSchema = new mongoose.Schema(
       defaultAgent: {
         type: String,
         default: "chat",
+      },
+    },
+
+    providerCredentials: {
+      google: {
+        type: providerCredentialSchema,
+        default: () => ({}),
+      },
+      openai: {
+        type: providerCredentialSchema,
+        default: () => ({}),
+      },
+      openrouter: {
+        type: providerCredentialSchema,
+        default: () => ({}),
+      },
+      groq: {
+        type: providerCredentialSchema,
+        default: () => ({}),
+      },
+      huggingface: {
+        type: providerCredentialSchema,
+        default: () => ({}),
       },
     },
 

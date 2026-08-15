@@ -28,6 +28,29 @@ function normalizeMessage(role, content) {
     };
 }
 
+function sanitizeMessages(messages) {
+    if (!Array.isArray(messages)) {
+        return [];
+    }
+
+    return messages
+        .map((message) => normalizeMessage(message))
+        .filter((message) => {
+            return Boolean(
+                message &&
+                message.role &&
+                message.content !== undefined &&
+                message.content !== null
+            );
+        })
+        .map((message) => ({
+            role: String(message.role).trim(),
+            content: typeof message.content === "string"
+                ? message.content
+                : String(message.content),
+        }));
+}
+
 function buildErrorMessage(action, error) {
     const status = error.response?.status;
     const detail =
@@ -54,11 +77,11 @@ export async function getMessages(chatId) {
         );
 
         if (Array.isArray(response.data)) {
-            return response.data;
+            return sanitizeMessages(response.data);
         }
 
         if (Array.isArray(response.data?.data)) {
-            return response.data.data;
+            return sanitizeMessages(response.data.data);
         }
 
         return [];
@@ -68,6 +91,21 @@ export async function getMessages(chatId) {
         }
 
         throw new Error(buildErrorMessage("Get messages", error));
+    }
+}
+
+export async function getChat(chatId) {
+    if (!chatId) {
+        throw new Error("chatId is required.");
+    }
+
+    try {
+        const response = await axios.get(
+            `${getBaseUrl()}/chat/single/${chatId}`
+        );
+        return response.data;
+    } catch (error) {
+        throw new Error(buildErrorMessage("Get chat", error));
     }
 }
 
@@ -101,6 +139,7 @@ export async function saveMessage(chatId, role, content) {
 const chatClient = {
     getMessages,
     saveMessage,
+    getChat,
 };
 
 export default chatClient;

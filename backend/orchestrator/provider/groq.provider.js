@@ -1,16 +1,17 @@
 import Groq from "groq-sdk";
 
 import env from "../config/env.js";
+import { getDefaultModel } from "../config/model.js";
 import BaseProvider from "./base.provider.js";
 
 class GroqProvider extends BaseProvider {
 
-    constructor() {
+    constructor(apiKey = env.GROQ_API_KEY) {
 
         super("Groq");
 
         this.client = new Groq({
-            apiKey: env.GROQ_API_KEY,
+            apiKey,
         });
 
     }
@@ -26,7 +27,7 @@ class GroqProvider extends BaseProvider {
 
                 model:
                     model ||
-                    "llama-3.3-70b-versatile",
+                    getDefaultModel("groq"),
 
                 temperature:
                     options.temperature ?? 0.7,
@@ -53,7 +54,7 @@ class GroqProvider extends BaseProvider {
 
                 model:
                     model ||
-                    "llama-3.3-70b-versatile",
+                    getDefaultModel("groq"),
 
                 temperature:
                     options.temperature ?? 0.7,

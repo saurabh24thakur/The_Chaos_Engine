@@ -3,15 +3,16 @@ import { InferenceClient } from "@huggingface/inference";
 import BaseProvider from "./base.provider.js";
 
 import env from "../config/env.js";
+import { getDefaultModel } from "../config/model.js";
 
 class HuggingFaceProvider extends BaseProvider {
 
-    constructor() {
+    constructor(apiKey = env.HUGGINGFACE_API_KEY) {
 
         super("HuggingFace");
 
         this.client = new InferenceClient(
-            env.HUGGINGFACE_API_KEY
+            apiKey
         );
 
     }
@@ -24,7 +25,7 @@ class HuggingFaceProvider extends BaseProvider {
         const completion =
             await this.client.chatCompletion({
 
-                model,
+                model: model || getDefaultModel("huggingface"),
 
                 messages,
 
@@ -47,7 +48,7 @@ class HuggingFaceProvider extends BaseProvider {
         const completionStream =
             await this.client.chatCompletionStream({
 
-                model,
+                model: model || getDefaultModel("huggingface"),
 
                 messages,
 

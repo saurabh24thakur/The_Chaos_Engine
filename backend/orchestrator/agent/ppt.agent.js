@@ -20,10 +20,23 @@ export async function pptAgent(state, config) {
         const history =
             await getMessages(chatId);
 
+        const conversation =
+            Array.isArray(history) && history.length > 0
+                ? history
+                : [{
+                    role: "user",
+                    content: prompt,
+                }];
+
         const {
             provider,
             model,
-        } = ProviderManager.getProvider(workspace);
+        } = await ProviderManager.getProvider({
+            workspace,
+            provider: state.provider,
+            model: state.model,
+            apiKey: state.apiKey,
+        });
 
         const messages = [
             {
@@ -56,7 +69,7 @@ Continue for all required slides.
 
 Keep the content concise, professional and presentation-ready.`
             },
-            ...history,
+            ...conversation,
         ];
 
         let answer = "";
@@ -90,8 +103,15 @@ Keep the content concise, professional and presentation-ready.`
 
         await saveMessage(chatId, "assistant", answer);
 
+        const {
+            apiKey,
+            provider: providerName,
+            model: selectedModel,
+            ...safeState
+        } = state;
+
         return {
-            ...state,
+            ...safeState,
             response: answer,
         };
 
@@ -102,8 +122,15 @@ Keep the content concise, professional and presentation-ready.`
             error
         );
 
+        const {
+            apiKey,
+            provider,
+            model,
+            ...safeState
+        } = state;
+
         return {
-            ...state,
+            ...safeState,
             error: error.message,
         };
 

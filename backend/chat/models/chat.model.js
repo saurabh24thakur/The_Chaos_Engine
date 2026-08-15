@@ -11,6 +11,16 @@ const chatSchema = new mongoose.Schema({
     title: {
         type: String,
         default: "New Chat"
+    },
+
+    provider: {
+        type: String,
+        default: ""
+    },
+
+    model: {
+        type: String,
+        default: ""
     }
 
 }, {

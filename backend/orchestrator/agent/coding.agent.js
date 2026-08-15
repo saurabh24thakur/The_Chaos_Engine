@@ -119,14 +119,26 @@ export async function codingAgent(state, config) {
         await saveMessage(chatId, "user", prompt);
 
         const history = await getMessages(chatId);
+        const conversation =
+            Array.isArray(history) && history.length > 0
+                ? history
+                : [{
+                    role: "user",
+                    content: prompt,
+                }];
 
         const {
             provider,
             model,
-        } = ProviderManager.getProvider(workspace);
+        } = await ProviderManager.getProvider({
+            workspace,
+            provider: state.provider,
+            model: state.model,
+            apiKey: state.apiKey,
+        });
 
         const planMessages = buildCodingMessages(
-            history,
+            conversation,
             CODING_PLANNER_PROMPT
         );
 
@@ -139,7 +151,7 @@ export async function codingAgent(state, config) {
             mode: "answer",
         };
 
-        let finalMessages = buildCodingMessages(history);
+        let finalMessages = buildCodingMessages(conversation);
 
         if (
             plan.mode === "tool" &&
@@ -161,7 +173,7 @@ export async function codingAgent(state, config) {
                         `Use the following tool results to answer the user's request.\n\n` +
                         formatToolResults(toolRuns),
                 },
-                ...history,
+                ...conversation,
             ];
         }
 
@@ -190,15 +202,29 @@ export async function codingAgent(state, config) {
 
         await saveMessage(chatId, "assistant", answer);
 
+        const {
+            apiKey,
+            provider: providerName,
+            model: selectedModel,
+            ...safeState
+        } = state;
+
         return {
-            ...state,
+            ...safeState,
             response: answer,
         };
     } catch (error) {
         console.error("Coding Agent Error:", error);
 
+        const {
+            apiKey,
+            provider,
+            model,
+            ...safeState
+        } = state;
+
         return {
-            ...state,
+            ...safeState,
             error: error.message,
         };
     }

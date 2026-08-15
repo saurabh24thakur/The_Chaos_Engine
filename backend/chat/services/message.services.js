@@ -23,11 +23,19 @@ export const createMessage = async (
 
 export const getMessages = async (chatId) => {
 
-    return await Message.find({
+    const messages = await Message.find({
         chatId,
-    }).sort({
+    })
+        .select("role content")
+        .lean()
+        .sort({
         createdAt: 1,
     });
+
+    return messages.map((message) => ({
+        role: message.role,
+        content: message.content,
+    }));
 
 };
 

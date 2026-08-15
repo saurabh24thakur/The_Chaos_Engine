@@ -1,35 +1,101 @@
-const MODELS = {
-
-    chat: {
-        provider: "google",
-        model: "gemini-2.5-flash"
-    },
-
-    search: {
-        provider: "google",
-        model: "gemini-2.5-flash"
-    },
-
-    coding: {
-        provider: "google",
-        model: "gemini-2.5-flash",
-    },
-
-    pdf: {
-        provider: "google",
-        model: "gemini-2.5-flash"
-    },
-
-    ppt: {
-        provider: "google",
-        model: "gemini-2.5-flash"
-    },
-
-    image: {
-        provider: "huggingface",
-        model: "black-forest-labs/FLUX.1-dev"
-    }
-
+const PROVIDER_CATALOG = {
+  google: {
+    provider: "google",
+    label: "Gemini",
+    defaultModel: "gemini-2.5-flash",
+    models: [
+      "gemini-2.5-flash",
+      "gemini-2.5-pro",
+      "gemini-2.0-flash",
+    ],
+  },
+  openai: {
+    provider: "openai",
+    label: "OpenAI",
+    defaultModel: "gpt-4.1-mini",
+    models: [
+      "gpt-4.1-mini",
+      "gpt-4.1",
+      "gpt-4o-mini",
+    ],
+  },
+  openrouter: {
+    provider: "openrouter",
+    label: "OpenRouter",
+    defaultModel: "openrouter/auto",
+    models: [
+      "openrouter/auto",
+      "openai/gpt-4.1-mini",
+      "anthropic/claude-3.5-sonnet",
+      "meta-llama/llama-3.3-70b-instruct",
+    ],
+  },
+  groq: {
+    provider: "groq",
+    label: "Groq",
+    defaultModel: "llama-3.3-70b-versatile",
+    models: [
+      "llama-3.3-70b-versatile",
+      "llama-3.1-8b-instant",
+      "mixtral-8x7b-32768",
+    ],
+  },
+  huggingface: {
+    provider: "huggingface",
+    label: "Hugging Face",
+    defaultModel: "black-forest-labs/FLUX.1-dev",
+    models: [
+      "black-forest-labs/FLUX.1-dev",
+    ],
+  },
 };
 
-export default MODELS;
+const WORKSPACE_DEFAULTS = {
+  chat: {
+    provider: "google",
+    model: PROVIDER_CATALOG.google.defaultModel,
+  },
+  search: {
+    provider: "google",
+    model: PROVIDER_CATALOG.google.defaultModel,
+  },
+  coding: {
+    provider: "google",
+    model: PROVIDER_CATALOG.google.defaultModel,
+  },
+  pdf: {
+    provider: "google",
+    model: PROVIDER_CATALOG.google.defaultModel,
+  },
+  ppt: {
+    provider: "google",
+    model: PROVIDER_CATALOG.google.defaultModel,
+  },
+  image: {
+    provider: "huggingface",
+    model: PROVIDER_CATALOG.huggingface.defaultModel,
+  },
+};
+
+export function getProviderCatalog() {
+  return Object.values(PROVIDER_CATALOG);
+}
+
+export function getProviderDefinition(provider) {
+  return PROVIDER_CATALOG[String(provider || "").trim().toLowerCase()] || null;
+}
+
+export function getDefaultModel(provider) {
+  return getProviderDefinition(provider)?.defaultModel || "";
+}
+
+export function getWorkspaceDefault(workspace) {
+  return WORKSPACE_DEFAULTS[String(workspace || "").trim().toLowerCase()] || null;
+}
+
+export function getSupportedProviders() {
+  return Object.keys(PROVIDER_CATALOG);
+}
+
+export default WORKSPACE_DEFAULTS;
+
