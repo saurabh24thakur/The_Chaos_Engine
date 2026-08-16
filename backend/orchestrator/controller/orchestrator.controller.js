@@ -2,6 +2,10 @@ import GraphRegistry from "../graph/graph.registry.js";
 import { getProviderCatalog } from "../config/model.js";
 import { getChat } from "../services/chat.client.js";
 import { getProviderApiKey } from "../services/auth.client.js";
+import path from "node:path";
+import { existsSync } from "node:fs";
+
+import { resolvePresentationPath } from "../services/ppt.service.js";
 
 export const executeChat = async (req, res) => {
     try {
@@ -68,6 +72,7 @@ export const executeChat = async (req, res) => {
         res.json({
             success: true,
             response: result.response,
+            artifact: result.artifact || null,
         });
     } catch (error) {
         console.error(error);
@@ -184,6 +189,37 @@ export const getModels = async (req, res) => {
         res.json(catalog);
     } catch (error) {
         res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+export const downloadPresentation = async (req, res) => {
+    try {
+        const fileName = path.basename(String(req.params.fileName || ""));
+
+        if (!fileName || !fileName.toLowerCase().endsWith(".pptx")) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid presentation file.",
+            });
+        }
+
+        const filePath = resolvePresentationPath(fileName);
+
+        if (!existsSync(filePath)) {
+            return res.status(404).json({
+                success: false,
+                message: "Presentation file not found.",
+            });
+        }
+
+        return res.download(filePath, fileName);
+    } catch (error) {
+        console.error("Download error:", error);
+
+        return res.status(500).json({
             success: false,
             message: error.message,
         });

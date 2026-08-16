@@ -4,7 +4,11 @@ export const createMessage = async (req, res) => {
 
     try {
 
-        const { role, content } = req.body;
+        const {
+            role,
+            content,
+            artifact = null,
+        } = req.body;
 
         const message = await messageService.createMessage(
 
@@ -12,7 +16,9 @@ export const createMessage = async (req, res) => {
 
             role,
 
-            content
+            content,
+
+            artifact
 
         );
 

@@ -42,6 +42,21 @@ function resolveApiKey(providerName, apiKey) {
     return null;
 }
 
+function sanitizeMessages(messages) {
+    if (!Array.isArray(messages)) {
+        return [];
+    }
+
+    return messages
+        .map((message) => ({
+            role: String(message?.role || "").trim(),
+            content: typeof message?.content === "string"
+                ? message.content
+                : String(message?.content ?? ""),
+        }))
+        .filter((message) => message.role && message.content);
+}
+
 async function createProvider(providerName, apiKey) {
     switch (providerName) {
         case "google":
@@ -157,7 +172,7 @@ class ProviderManager {
 
         return await resolved.provider.generate({
             model: resolved.model,
-            messages,
+            messages: sanitizeMessages(messages),
             options,
         });
     }
@@ -185,7 +200,7 @@ class ProviderManager {
 
         for await (const chunk of resolved.provider.stream({
             model: resolved.model,
-            messages,
+            messages: sanitizeMessages(messages),
             options,
         })) {
             yield chunk;
