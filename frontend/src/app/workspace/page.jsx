@@ -15,6 +15,9 @@ import {
   Trash2,
   Settings,
   X,
+  MoreVertical,
+  Check,
+  Edit2,
 } from "lucide-react";
 import { UserButton, useAuth } from "@clerk/nextjs";
 import WorkspaceMessage from "@/components/WorkspaceMessage";
@@ -27,6 +30,9 @@ export default function Workspace() {
   const [messages, setMessages] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
   const [inputText, setInputText] = useState("");
+  const [editingChatId, setEditingChatId] = useState(null);
+  const [editTitleText, setEditTitleText] = useState("");
+  const [activeMenuChatId, setActiveMenuChatId] = useState(null);
 
   // New features state
   const [selectedWorkspace, setSelectedWorkspace] = useState("chat");
@@ -396,6 +402,47 @@ export default function Workspace() {
     }
   };
 
+  useEffect(() => {
+    if (!activeMenuChatId) return;
+    const handleOutsideClick = () => {
+      setActiveMenuChatId(null);
+    };
+    document.addEventListener("click", handleOutsideClick);
+    return () => {
+      document.removeEventListener("click", handleOutsideClick);
+    };
+  }, [activeMenuChatId]);
+
+  const handleRenameChat = async (chatId, newTitle) => {
+    if (!newTitle || !newTitle.trim()) return;
+
+    const trimmed = newTitle.trim();
+    const current = chats.find(c => c._id === chatId);
+    if (current && current.title === trimmed) {
+      setEditingChatId(null);
+      return;
+    }
+
+    try {
+      const res = await fetch(`http://localhost:8000/api/chat/chat/${chatId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: trimmed }),
+      });
+      if (res.ok) {
+        setChats((prev) =>
+          prev.map((c) => (c._id === chatId ? { ...c, title: trimmed } : c))
+        );
+        setEditingChatId(null);
+      } else {
+        const errData = await res.json();
+        alert(errData.message || "Failed to rename chat");
+      }
+    } catch (err) {
+      console.error("Error renaming chat:", err);
+    }
+  };
+
   const currentChat = chats.find((c) => c._id === activeChatId) || {
     title: "No Chat Selected",
   };
@@ -439,29 +486,94 @@ export default function Workspace() {
 
         {/* Chats History List */}
         <div className="flex-1 overflow-y-auto p-2 min-w-[280px] flex flex-col gap-1.5">
-          {chats.map((c) => (
-            <div
-              key={c._id}
-              onClick={() => setActiveChatId(c._id)}
-              className={`group flex items-center justify-between p-3.5 rounded-xl cursor-pointer transition-all ${
-                activeChatId === c._id
-                  ? "bg-white text-black font-semibold"
-                  : "text-zinc-400 hover:bg-white/5 hover:text-white"
-              }`}
-            >
-              <span className="text-xs truncate flex-1 pr-2 select-none">
-                {c.title.split(":")[0]}
-              </span>
-              <button
-                onClick={(e) => deleteChat(c._id, e)}
-                className={`p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/10 hover:text-red-500 ${
-                  activeChatId === c._id ? "text-zinc-600 hover:text-red-600" : "text-zinc-500"
+          {chats.map((c) => {
+            const isEditing = editingChatId === c._id;
+            const isMenuActive = activeMenuChatId === c._id;
+            return (
+              <div
+                key={c._id}
+                onClick={() => !isEditing && setActiveChatId(c._id)}
+                className={`group relative flex items-center justify-between p-3.5 rounded-xl cursor-pointer transition-all ${
+                  activeChatId === c._id
+                    ? "bg-white text-black font-semibold"
+                    : "text-zinc-400 hover:bg-white/5 hover:text-white"
                 }`}
               >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          ))}
+                {isEditing ? (
+                  <div className="flex items-center gap-1.5 w-full" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="text"
+                      value={editTitleText}
+                      onChange={(e) => setEditTitleText(e.target.value.slice(0, 100))}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleRenameChat(c._id, editTitleText);
+                        } else if (e.key === "Escape") {
+                          setEditingChatId(null);
+                        }
+                      }}
+                      autoFocus
+                      className="flex-1 bg-transparent border-b border-zinc-500/30 outline-none text-xs text-inherit py-0.5"
+                    />
+                    <button
+                      onClick={() => handleRenameChat(c._id, editTitleText)}
+                      className="p-1 hover:bg-zinc-500/10 rounded cursor-pointer text-inherit"
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setEditingChatId(null)}
+                      className="p-1 hover:bg-zinc-500/10 rounded cursor-pointer text-inherit"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <span className="text-xs truncate flex-1 pr-2 select-none">
+                      {c.title.includes(':') && c.title.toLowerCase().startsWith('chat ') ? c.title.split(":")[0] : c.title}
+                    </span>
+                    <div className="relative flex items-center" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => setActiveMenuChatId(isMenuActive ? null : c._id)}
+                        className={`p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-zinc-500/10 ${
+                          activeChatId === c._id ? "text-zinc-600 hover:bg-black/5" : "text-zinc-500"
+                        }`}
+                      >
+                        <MoreVertical className="h-3.5 w-3.5" />
+                      </button>
+
+                      {isMenuActive && (
+                        <div className="absolute right-0 top-7 w-28 bg-[#121212] border border-white/10 rounded-xl shadow-2xl py-1 z-30 font-sans text-[11px] font-normal text-zinc-300">
+                          <button
+                            onClick={() => {
+                              setEditingChatId(c._id);
+                              setEditTitleText(c.title);
+                              setActiveMenuChatId(null);
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-white/5 hover:text-white"
+                          >
+                            <Edit2 className="h-3.5 w-3.5 text-zinc-400" />
+                            <span>Rename</span>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              deleteChat(c._id, e);
+                              setActiveMenuChatId(null);
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-red-500/10 text-red-500/90 hover:text-red-500"
+                          >
+                            <Trash2 className="h-3.5 w-3.5 text-red-500/80" />
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })}
           {chats.length === 0 && (
             <div className="text-center text-xs text-zinc-600 mt-8">
               No active workspaces.

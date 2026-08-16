@@ -38,3 +38,6 @@ pnpm-debug.log*
 Thumbs.db
 *.tsbuildinfo
 
+# Local generation artifacts
+generated/
+

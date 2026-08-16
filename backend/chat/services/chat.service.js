@@ -1,70 +1,89 @@
 import Chat from "../models/chat.model.js";
 import { deleteMessages } from "./message.services.js";
+import mongoose from "mongoose";
 
 function buildConfig(chat) {
-  if (!chat) {
-    return null;
-  }
-
-  return {
-    provider: chat.provider || "",
-    model: chat.model || "",
-  };
+    if (!chat) {
+        return null;
+    }
+    return {
+        provider: chat.provider || "",
+        model: chat.model || "",
+    };
 }
 
 export const createChat = async (userId) => {
-  return Chat.create({
-    userId,
-    title: "New Chat",
-    provider: "",
-    model: "",
-  });
+    return await Chat.create({
+        userId,
+        title: "New Chat",
+        provider: "",
+        model: "",
+    });
 };
 
 export const getChats = async (userId) => {
-  return Chat.find({ userId }).sort({ updatedAt: -1 });
+    return await Chat.find({ userId }).sort({ updatedAt: -1 });
 };
 
 export const getChat = async (id) => {
-  return Chat.findById(id);
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return null;
+    }
+    return await Chat.findById(id);
 };
 
 export const renameChat = async (id, title) => {
-  return Chat.findByIdAndUpdate(
-    id,
-    { title },
-    { new: true }
-  );
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new Error("Invalid Chat ID");
+    }
+    if (!title || typeof title !== "string" || !title.trim()) {
+        throw new Error("Title is required");
+    }
+    const trimmed = title.trim();
+    if (trimmed.length > 100) {
+        throw new Error("Title must not exceed 100 characters");
+    }
+    return await Chat.findByIdAndUpdate(
+        id,
+        { title: trimmed },
+        { new: true }
+    );
 };
 
 export const deleteChat = async (id) => {
-  await deleteMessages(id);
-  return Chat.findByIdAndDelete(id);
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return null;
+    }
+    await deleteMessages(id);
+    return await Chat.findByIdAndDelete(id);
 };
 
 export const getChatConfig = async (chatId) => {
-  const chat = await Chat.findById(chatId).select("provider model");
-
-  if (!chat) {
-    return null;
-  }
-
-  return buildConfig(chat);
+    if (!mongoose.Types.ObjectId.isValid(chatId)) {
+        return null;
+    }
+    const chat = await Chat.findById(chatId).select("provider model");
+    if (!chat) {
+        return null;
+    }
+    return buildConfig(chat);
 };
 
 export const updateChatConfig = async (chatId, config = {}) => {
-  const provider = String(config.provider || "").trim().toLowerCase();
-  const model = String(config.model || "").trim();
+    if (!mongoose.Types.ObjectId.isValid(chatId)) {
+        return null;
+    }
+    const provider = String(config.provider || "").trim().toLowerCase();
+    const model = String(config.model || "").trim();
 
-  const chat = await Chat.findByIdAndUpdate(
-    chatId,
-    {
-      provider,
-      model,
-    },
-    { new: true }
-  ).select("provider model");
+    const chat = await Chat.findByIdAndUpdate(
+        chatId,
+        {
+            provider,
+            model,
+        },
+        { new: true }
+    ).select("provider model");
 
-  return buildConfig(chat);
+    return buildConfig(chat);
 };
-

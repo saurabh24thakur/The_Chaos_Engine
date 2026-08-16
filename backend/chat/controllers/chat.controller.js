@@ -65,29 +65,43 @@ export const getChat = async (req, res) => {
 };
 
 export const renameChat = async (req, res) => {
-
     try {
+        const { id } = req.params;
+        const { title } = req.body;
 
-        const chat = await chatService.renameChat(
+        if (!title || typeof title !== "string" || !title.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: "Title is required"
+            });
+        }
 
-            req.params.id,
+        const trimmed = title.trim();
+        if (trimmed.length > 100) {
+            return res.status(400).json({
+                success: false,
+                message: "Title must not exceed 100 characters"
+            });
+        }
 
-            req.body.title
+        const chat = await chatService.renameChat(id, trimmed);
+        if (!chat) {
+            return res.status(404).json({
+                success: false,
+                message: "Chat not found"
+            });
+        }
 
-        );
-
-        res.json(chat);
-
-    } catch (err) {
-
-        res.status(500).json({
-
-            message: err.message
-
+        res.json({
+            success: true,
+            chat
         });
-
+    } catch (err) {
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
     }
-
 };
 
 export const deleteChat = async (req, res) => {
