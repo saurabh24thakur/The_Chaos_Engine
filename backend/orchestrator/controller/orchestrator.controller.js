@@ -69,6 +69,13 @@ export const executeChat = async (req, res) => {
             userId: resolvedUserId,
         });
 
+        if (result.error) {
+            return res.status(500).json({
+                success: false,
+                message: result.error,
+            });
+        }
+
         res.json({
             success: true,
             response: result.response,
