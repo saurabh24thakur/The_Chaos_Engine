@@ -2,7 +2,7 @@ import path from "node:path";
 import { mkdir } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 
-import PptxGenJS from "pptxgenjs";
+let PptxGenJS = null;
 import {
     markdownToPlainText,
     markdownToRuns,
@@ -11,7 +11,6 @@ import {
 const GENERATED_ROOT = path.resolve(process.cwd(), "generated", "presentations");
 const PPT_WIDTH = 13.333;
 const PPT_HEIGHT = 7.5;
-PptxGenJS.ShapeType = new PptxGenJS().ShapeType;
 
 function toPlainText(value) {
     return markdownToPlainText(value);
@@ -2495,6 +2494,11 @@ export function resolvePresentationPath(fileName) {
 }
 
 export async function createPresentationArtifact(presentation) {
+    if (!PptxGenJS) {
+        const module = await import("pptxgenjs");
+        PptxGenJS = module.default || module;
+        PptxGenJS.ShapeType = new PptxGenJS().ShapeType;
+    }
     const normalized = normalizePresentationForRender(presentation);
     const { title, slides, themeConfig } = normalized;
 

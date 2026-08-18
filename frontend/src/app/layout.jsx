@@ -39,7 +39,8 @@ export default async function RootLayout({ children }) {
           )?.emailAddress || user.emailAddresses?.[0]?.emailAddress;
 
         if (primaryEmail) {
-          await fetch("http://localhost:8001/api/users/sync", {
+          const authUrl = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || "http://localhost:8001";
+          await fetch(`${authUrl}/api/users/sync`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

@@ -66,7 +66,7 @@ function ArtifactCard({ artifact }) {
     artifact?.downloadUrl && artifact.downloadUrl.startsWith("http")
       ? artifact.downloadUrl
       : artifact?.downloadUrl
-        ? `http://localhost:8000${artifact.downloadUrl}`
+        ? `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"}${artifact.downloadUrl}`
         : "";
 
   return (

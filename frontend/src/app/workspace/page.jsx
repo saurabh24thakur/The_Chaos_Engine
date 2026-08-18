@@ -22,6 +22,8 @@ import {
 import { UserButton, useAuth } from "@clerk/nextjs";
 import WorkspaceMessage from "@/components/WorkspaceMessage";
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+
 export default function Workspace() {
   const router = useRouter();
   const { userId, isLoaded } = useAuth();
@@ -82,7 +84,7 @@ export default function Workspace() {
 
   const fetchChats = async () => {
     try {
-      const res = await fetch(`http://localhost:8000/api/chat/chat/${userId}`);
+      const res = await fetch(`${BACKEND_URL}/api/chat/chat/${userId}`);
       if (res.ok) {
         const data = await res.json();
         setChats(data);
@@ -97,7 +99,7 @@ export default function Workspace() {
 
   const fetchMessages = async (chatId) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/chat/messages/${chatId}`);
+      const res = await fetch(`${BACKEND_URL}/api/chat/messages/${chatId}`);
       if (res.ok) {
         const data = await res.json();
         setMessages(data);
@@ -109,7 +111,7 @@ export default function Workspace() {
 
   const fetchChatConfig = async (chatId) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/chat/chat/config/${chatId}`);
+      const res = await fetch(`${BACKEND_URL}/api/chat/chat/config/${chatId}`);
       if (res.ok) {
         const data = await res.json();
         setActiveChatConfig(data);
@@ -128,7 +130,7 @@ export default function Workspace() {
 
   const fetchProviderKeys = async () => {
     try {
-      const res = await fetch(`http://localhost:8000/api/auth/api/settings/providers?clerkId=${userId}`);
+      const res = await fetch(`${BACKEND_URL}/api/auth/api/settings/providers?clerkId=${userId}`);
       if (res.ok) {
         const data = await res.json();
         setProviderKeys(data.providers || []);
@@ -140,7 +142,7 @@ export default function Workspace() {
 
   const fetchModelsCatalog = async () => {
     try {
-      const res = await fetch(`http://localhost:8000/api/orchestrator/models`);
+      const res = await fetch(`${BACKEND_URL}/api/orchestrator/models`);
       if (res.ok) {
         const data = await res.json();
         setCatalog(data || []);
@@ -153,7 +155,7 @@ export default function Workspace() {
   const handleSaveConfig = async (provider, model) => {
     if (!activeChatId) return;
     try {
-      const res = await fetch(`http://localhost:8000/api/chat/chat/config/${activeChatId}`, {
+      const res = await fetch(`${BACKEND_URL}/api/chat/chat/config/${activeChatId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ provider, model }),
@@ -170,7 +172,7 @@ export default function Workspace() {
   const handleSaveKey = async (provider, apiKey) => {
     if (!apiKey.trim()) return;
     try {
-      const res = await fetch(`http://localhost:8000/api/auth/api/settings/providers/${provider}`, {
+      const res = await fetch(`${BACKEND_URL}/api/auth/api/settings/providers/${provider}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ apiKey, clerkId: userId }),
@@ -189,7 +191,7 @@ export default function Workspace() {
   const handleDeleteKey = async (provider) => {
     if (!confirm(`Are you sure you want to delete the key for ${provider}?`)) return;
     try {
-      const res = await fetch(`http://localhost:8000/api/auth/api/settings/providers/${provider}?clerkId=${userId}`, {
+      const res = await fetch(`${BACKEND_URL}/api/auth/api/settings/providers/${provider}?clerkId=${userId}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -227,7 +229,7 @@ export default function Workspace() {
     setMessages((prev) => [...prev, tempAssistantMsg]);
 
     try {
-      const res = await fetch("http://localhost:8000/api/orchestrator/chat/stream", {
+      const res = await fetch(`${BACKEND_URL}/api/orchestrator/chat/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -347,7 +349,7 @@ export default function Workspace() {
   const createNewChat = async () => {
     if (!userId) return;
     try {
-      const res = await fetch("http://localhost:8000/api/chat/chat", {
+      const res = await fetch(`${BACKEND_URL}/api/chat/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId }),
@@ -357,7 +359,7 @@ export default function Workspace() {
         const defaultTitle = `chat ${chats.length + 1}: New Swarm Workspace`;
 
         // Rename the chat
-        await fetch(`http://localhost:8000/api/chat/chat/${newChat._id}`, {
+        await fetch(`${BACKEND_URL}/api/chat/chat/${newChat._id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title: defaultTitle }),
@@ -366,7 +368,7 @@ export default function Workspace() {
 
         // Insert welcome message
         const welcomeText = "Ready. Tell me what agent swarms we should spin up today.";
-        await fetch(`http://localhost:8000/api/chat/messages/${newChat._id}`, {
+        await fetch(`${BACKEND_URL}/api/chat/messages/${newChat._id}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ role: "assistant", content: welcomeText }),
@@ -383,7 +385,7 @@ export default function Workspace() {
   const deleteChat = async (id, e) => {
     e.stopPropagation();
     try {
-      const res = await fetch(`http://localhost:8000/api/chat/chat/${id}`, {
+      const res = await fetch(`${BACKEND_URL}/api/chat/chat/${id}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -424,7 +426,7 @@ export default function Workspace() {
     }
 
     try {
-      const res = await fetch(`http://localhost:8000/api/chat/chat/${chatId}`, {
+      const res = await fetch(`${BACKEND_URL}/api/chat/chat/${chatId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: trimmed }),
