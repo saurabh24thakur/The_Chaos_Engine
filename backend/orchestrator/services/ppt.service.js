@@ -1,6 +1,7 @@
 import path from "node:path";
 import { mkdir } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
+import { createRequire } from "node:module";
 
 let PptxGenJS = null;
 import {
@@ -2495,8 +2496,8 @@ export function resolvePresentationPath(fileName) {
 
 export async function createPresentationArtifact(presentation) {
     if (!PptxGenJS) {
-        const module = await import("pptxgenjs");
-        PptxGenJS = module.default || module;
+        const require = createRequire(import.meta.url);
+        PptxGenJS = require("pptxgenjs");
         PptxGenJS.ShapeType = new PptxGenJS().ShapeType;
     }
     const normalized = normalizePresentationForRender(presentation);
