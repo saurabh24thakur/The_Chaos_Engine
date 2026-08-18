@@ -1,3 +1,11 @@
 # Root-level leftovers from the old layout.
 /.next/
 /node_modules/
+
+# OpenNext
+.open-next
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
