@@ -6,8 +6,7 @@
     "build": "next build",
     "dev": "next dev",
     "start": "next start",
-    "lint": "eslint",
-    "preview": "opennextjs-cloudflare build && node prepare-pages.js && wrangler pages dev .open-next/assets"
+    "lint": "eslint"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.5.17",
