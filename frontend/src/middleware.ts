@@ -6,7 +6,7 @@ export default clerkMiddleware(async (auth, request) => {
   if (isProtectedRoute(request)) {
     await auth.protect();
   }
-});
+}, { proxyUrl: 'https://the-chaos-engine.pages.dev/api/clerk-proxy' });
 
 export const config = {
   matcher: [
