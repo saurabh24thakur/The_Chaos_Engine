@@ -157,8 +157,10 @@ export default function WorkspaceMessage({ message }) {
     return <ArtifactCard artifact={message.artifact} />;
   }
 
+  const isAgent = message?.role !== "user";
+
   return (
-    <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-pre:p-0 prose-pre:bg-transparent">
+    <div className={`prose prose-sm max-w-none prose-p:leading-relaxed prose-pre:p-0 prose-pre:bg-transparent ${isAgent ? "prose-invert" : ""}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{

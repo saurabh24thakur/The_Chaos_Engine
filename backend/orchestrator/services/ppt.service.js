@@ -3,13 +3,19 @@ import { mkdir } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 
+import os from "node:os";
+
 let PptxGenJS = null;
 import {
     markdownToPlainText,
     markdownToRuns,
 } from "../utils/pptMarkdownParser.js";
 
-const GENERATED_ROOT = path.resolve(process.cwd(), "generated", "presentations");
+// Use /tmp for serverless environments (like Vercel) to avoid read-only filesystem errors
+const isServerless = process.env.VERCEL === "1" || process.env.AWS_LAMBDA_FUNCTION_VERSION;
+const GENERATED_ROOT = isServerless
+    ? path.resolve(os.tmpdir(), "generated", "presentations")
+    : path.resolve(process.cwd(), "generated", "presentations");
 const PPT_WIDTH = 13.333;
 const PPT_HEIGHT = 7.5;
 
