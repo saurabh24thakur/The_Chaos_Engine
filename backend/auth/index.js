@@ -10,24 +10,8 @@ configDotenv();
 
 const app = express();
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    const allowedOrigins = ["http://localhost:3000", "http://127.0.0.1:3000"];
-    
-    // Allow localhost, exact matches, or any Vercel/Cloudflare preview branch
-    if (
-      allowedOrigins.includes(origin) || 
-      origin.endsWith('.vercel.app') || 
-      origin.endsWith('.pages.dev')
-    ) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true
+  origin: "*",
+  credentials: false
 }));
 connectDB();
 
