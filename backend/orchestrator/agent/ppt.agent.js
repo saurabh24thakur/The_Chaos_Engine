@@ -668,17 +668,11 @@ export async function pptAgent(state, config) {
         };
     } catch (error) {
         console.error("PPT Agent Error:", error);
-
-        const {
-            apiKey,
-            provider,
-            model,
-            ...safeState
-        } = state;
-
-        return {
-            ...safeState,
-            error: error.message,
-        };
+        if (state.chatId) {
+            try {
+                await saveMessage(state.chatId, "assistant", `Error: ${error.message}`);
+            } catch (e) {}
+        }
+        throw error;
     }
 }

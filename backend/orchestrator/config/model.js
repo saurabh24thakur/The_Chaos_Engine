@@ -33,11 +33,11 @@ const PROVIDER_CATALOG = {
   groq: {
     provider: "groq",
     label: "Groq",
-    defaultModel: "llama-3.3-70b-versatile",
+    defaultModel: "openai/gpt-oss-120b",
     models: [
-      "llama-3.3-70b-versatile",
-      "llama-3.1-8b-instant",
-      "mixtral-8x7b-32768",
+      "qwen/qwen3.6-27b",
+      "openai/gpt-oss-120b",
+      "whisper-large-v3-turbo",
     ],
   },
   huggingface: {

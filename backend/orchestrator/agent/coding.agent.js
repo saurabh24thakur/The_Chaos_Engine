@@ -1,4 +1,4 @@
-import ProviderManager from "../provider/provider.manager.js";
+import ProviderManager, { sanitizeMessages } from "../provider/provider.manager.js";
 
 import {
     getMessages,
@@ -119,13 +119,14 @@ export async function codingAgent(state, config) {
         await saveMessage(chatId, "user", prompt);
 
         const history = await getMessages(chatId);
-        const conversation =
+        const conversation = sanitizeMessages(
             Array.isArray(history) && history.length > 0
                 ? history
                 : [{
                     role: "user",
                     content: prompt,
-                }];
+                }]
+        );
 
         const {
             provider,
@@ -215,18 +216,12 @@ export async function codingAgent(state, config) {
         };
     } catch (error) {
         console.error("Coding Agent Error:", error);
-
-        const {
-            apiKey,
-            provider,
-            model,
-            ...safeState
-        } = state;
-
-        return {
-            ...safeState,
-            error: error.message,
-        };
+        if (state.chatId) {
+            try {
+                await saveMessage(state.chatId, "assistant", `Error: ${error.message}`);
+            } catch (e) {}
+        }
+        throw error;
     }
 }
 

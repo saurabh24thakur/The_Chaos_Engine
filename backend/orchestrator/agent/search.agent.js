@@ -1,7 +1,5 @@
-import ProviderManager from "../provider/provider.manager.js";
-import {
-    saveMessage,
-} from "../services/chat.client.js";
+import ProviderManager, { sanitizeMessages } from "../provider/provider.manager.js";
+import { getMessages, saveMessage } from "../services/chat.client.js";
 import searchClient from "../services/search.client.js";
 
 function formatSearchResults(results) {
@@ -120,17 +118,12 @@ export async function searchAgent(state, config) {
         };
     } catch (error) {
         console.error("Search Agent Error:", error);
-        const {
-            apiKey,
-            provider,
-            model,
-            ...safeState
-        } = state;
-
-        return {
-            ...safeState,
-            error: error.message,
-        };
+        if (state.chatId) {
+            try {
+                await saveMessage(state.chatId, "assistant", `Error: ${error.message}`);
+            } catch (e) {}
+        }
+        throw error;
     }
 }
 

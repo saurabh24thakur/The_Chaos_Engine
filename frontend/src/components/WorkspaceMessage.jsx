@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Check, Copy, Download, FileText, Loader2 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 function formatLanguage(language) {
   const value = String(language || "text").trim().toLowerCase();
@@ -151,46 +153,35 @@ export default function WorkspaceMessage({ message }) {
   const content = String(message?.content || "");
   const hasPptArtifact = message?.artifact?.type === "pptx";
 
-  const segments = useMemo(() => {
-    if (!content || hasPptArtifact) {
-      return [];
-    }
-
-    return splitSegments(content);
-  }, [content, hasPptArtifact]);
-
   if (hasPptArtifact) {
     return <ArtifactCard artifact={message.artifact} />;
   }
 
-  if (segments.length > 0) {
-    return (
-      <div className="flex flex-col gap-3">
-        {segments.map((segment, index) => {
-          if (segment.type === "code") {
+  return (
+    <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-pre:p-0 prose-pre:bg-transparent">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          code({ node, inline, className, children, ...props }) {
+            const match = /language-(\w+)/.exec(className || "");
+            if (!inline && match) {
+              return (
+                <CodeBlock
+                  language={match[1]}
+                  code={String(children).replace(/\n$/, "")}
+                />
+              );
+            }
             return (
-              <CodeBlock
-                key={`${index}-${segment.language}`}
-                language={segment.language}
-                code={segment.value}
-              />
+              <code className={className} {...props}>
+                {children}
+              </code>
             );
-          }
-
-          const text = segment.value.trim();
-          if (!text) {
-            return null;
-          }
-
-          return (
-            <p key={index} className="whitespace-pre-line">
-              {text}
-            </p>
-          );
-        })}
-      </div>
-    );
-  }
-
-  return <p className="whitespace-pre-line">{content}</p>;
+          },
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
 }

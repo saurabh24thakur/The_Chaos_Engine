@@ -42,7 +42,7 @@ function resolveApiKey(providerName, apiKey) {
     return null;
 }
 
-function sanitizeMessages(messages) {
+export function sanitizeMessages(messages) {
     if (!Array.isArray(messages)) {
         return [];
     }
