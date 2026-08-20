@@ -1,53 +1,65 @@
-import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+"use client";
+
+import { useAuth } from "@/context/AuthContext";
 import NavbarClient from "@/components/NavbarClient";
+import Link from "next/link";
 
 function AuthDesktop() {
+  const { user, logout } = useAuth();
+
   return (
     <div className="flex items-center gap-3">
-      <Show when="signed-out">
+      {!user ? (
         <div className="flex items-center gap-3">
-          <SignInButton mode="modal">
+          <Link href="/sign-in">
             <button className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-zinc-100">
               Sign in
             </button>
-          </SignInButton>
-          <SignUpButton mode="modal">
+          </Link>
+          <Link href="/sign-up">
             <button className="rounded-full bg-black px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-zinc-800">
               Sign up
             </button>
-          </SignUpButton>
+          </Link>
         </div>
-      </Show>
-      <Show when="signed-in">
-        <UserButton afterSignOutUrl="/" />
-      </Show>
+      ) : (
+        <div className="flex items-center gap-4">
+          <span className="text-sm font-medium">{user.username}</span>
+          <button onClick={logout} className="text-sm text-zinc-500 hover:text-black">
+            Logout
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
 function AuthMobile() {
+  const { user, logout } = useAuth();
+
   return (
     <div className="flex w-full flex-col gap-3">
-      <Show when="signed-out">
+      {!user ? (
         <div className="flex flex-col gap-2">
-          <SignInButton mode="modal">
+          <Link href="/sign-in" className="w-full">
             <button className="w-full rounded-full border border-black/10 bg-white px-4 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-zinc-100">
               Sign in
             </button>
-          </SignInButton>
-          <SignUpButton mode="modal">
+          </Link>
+          <Link href="/sign-up" className="w-full">
             <button className="w-full rounded-full bg-black px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-zinc-800">
               Sign up
             </button>
-          </SignUpButton>
+          </Link>
         </div>
-      </Show>
-      <Show when="signed-in">
+      ) : (
         <div className="flex items-center justify-between rounded-2xl border border-black/10 bg-black/5 p-3">
-          <span className="text-xs font-medium">Signed in</span>
-          <UserButton afterSignOutUrl="/" />
+          <span className="text-sm font-medium">{user.username}</span>
+          <button onClick={logout} className="text-sm text-zinc-500 hover:text-black">
+            Logout
+          </button>
         </div>
-      </Show>
+      )}
     </div>
   );
 }
@@ -55,3 +67,4 @@ function AuthMobile() {
 export default function Navbar() {
   return <NavbarClient authDesktop={<AuthDesktop />} authMobile={<AuthMobile />} />;
 }
+

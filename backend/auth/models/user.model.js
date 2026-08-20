@@ -23,14 +23,6 @@ const providerCredentialSchema = new mongoose.Schema(
 
 const userSchema = new mongoose.Schema(
   {
-    // Clerk User ID
-    clerkId: {
-      type: String,
-      required: true,
-      unique: true,
-      index: true,
-    },
-
     // Basic Information
     firstName: {
       type: String,
@@ -47,7 +39,7 @@ const userSchema = new mongoose.Schema(
       trim: true,
       lowercase: true,
       unique: true,
-      sparse: true,
+      required: true,
     },
 
     email: {
@@ -55,6 +47,11 @@ const userSchema = new mongoose.Schema(
       required: true,
       lowercase: true,
       unique: true,
+    },
+
+    password: {
+      type: String,
+      required: true,
     },
 
     imageUrl: {

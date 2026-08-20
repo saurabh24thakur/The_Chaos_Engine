@@ -8,9 +8,9 @@ function getBaseUrl() {
     return env.AUTH_SERVICE_URL.replace(/\/$/, "");
 }
 
-export async function getProviderApiKey(clerkId, provider) {
-    if (!clerkId) {
-        throw new Error("clerkId is required.");
+export async function getProviderApiKey(userId, provider) {
+    if (!userId) {
+        throw new Error("userId is required.");
     }
     if (!provider) {
         throw new Error("provider is required.");
@@ -20,7 +20,7 @@ export async function getProviderApiKey(clerkId, provider) {
         const response = await axios.get(
             `${getBaseUrl()}/api/settings/providers/${provider.toLowerCase()}/key`,
             {
-                params: { clerkId },
+                params: { userId },
                 headers: {
                     "x-internal-token": env.INTERNAL_SERVICE_TOKEN,
                 },

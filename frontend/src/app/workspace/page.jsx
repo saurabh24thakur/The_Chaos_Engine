@@ -19,14 +19,16 @@ import {
   Check,
   Edit2,
 } from "lucide-react";
-import { UserButton, useAuth } from "@clerk/nextjs";
+import { useAuth } from "@/context/AuthContext";
 import WorkspaceMessage from "@/components/WorkspaceMessage";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
 export default function Workspace() {
   const router = useRouter();
-  const { userId, isLoaded } = useAuth();
+  const { user, isLoading, logout } = useAuth();
+  const userId = user?._id;
+  const isLoaded = !isLoading;
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [chats, setChats] = useState([]);
   const [messages, setMessages] = useState([]);
@@ -130,7 +132,7 @@ export default function Workspace() {
 
   const fetchProviderKeys = async () => {
     try {
-      const res = await fetch(`${BACKEND_URL}/api/auth/api/settings/providers?clerkId=${userId}`);
+      const res = await fetch(`${BACKEND_URL}/api/auth/api/settings/providers?userId=${userId}`);
       if (res.ok) {
         const data = await res.json();
         setProviderKeys(data.providers || []);
@@ -175,7 +177,7 @@ export default function Workspace() {
       const res = await fetch(`${BACKEND_URL}/api/auth/api/settings/providers/${provider}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey, clerkId: userId }),
+        body: JSON.stringify({ apiKey, userId: userId }),
       });
       if (res.ok) {
         setEditingProvider(null);
@@ -191,7 +193,7 @@ export default function Workspace() {
   const handleDeleteKey = async (provider) => {
     if (!confirm(`Are you sure you want to delete the key for ${provider}?`)) return;
     try {
-      const res = await fetch(`${BACKEND_URL}/api/auth/api/settings/providers/${provider}?clerkId=${userId}`, {
+      const res = await fetch(`${BACKEND_URL}/api/auth/api/settings/providers/${provider}?userId=${userId}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -671,7 +673,9 @@ export default function Workspace() {
             >
               <Settings className="h-4 w-4" />
             </button>
-            <UserButton afterSignOutUrl="/" />
+            <button onClick={logout} className="px-3 py-1.5 rounded-lg border border-white/10 text-xs font-semibold hover:bg-white/5 cursor-pointer transition-colors text-zinc-300">
+              Logout
+            </button>
           </div>
         </div>
 

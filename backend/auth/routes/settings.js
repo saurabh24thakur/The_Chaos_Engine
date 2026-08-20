@@ -12,11 +12,10 @@ const SUPPORTED_PROVIDERS = [
   "huggingface",
 ];
 
-function getClerkId(req) {
+function getUserId(req) {
   return (
-    req.body?.clerkId ||
-    req.query?.clerkId ||
-    req.headers["x-clerk-id"] ||
+    req.body?.userId ||
+    req.query?.userId ||
     req.headers["x-user-id"] ||
     ""
   )
@@ -40,16 +39,16 @@ function buildProviderState(credentials = {}) {
   });
 }
 
-async function loadUser(clerkId) {
-  return User.findOne({ clerkId });
+async function loadUser(userId) {
+  return User.findById(userId);
 }
 
-async function saveCredential(clerkId, provider, apiKey) {
+async function saveCredential(userId, provider, apiKey) {
   const encryptedKey = encryptSecret(apiKey);
   const maskedKey = maskSecret(apiKey);
 
-  const user = await User.findOneAndUpdate(
-    { clerkId },
+  const user = await User.findByIdAndUpdate(
+    userId,
     {
       $set: {
         [`providerCredentials.${provider}`]: {
@@ -72,13 +71,13 @@ async function saveCredential(clerkId, provider, apiKey) {
 
 router.get("/providers", async (req, res) => {
   try {
-    const clerkId = getClerkId(req);
+    const userId = getUserId(req);
 
-    if (!clerkId) {
-      return res.status(400).json({ message: "clerkId is required." });
+    if (!userId) {
+      return res.status(400).json({ message: "userId is required." });
     }
 
-    const user = await loadUser(clerkId);
+    const user = await loadUser(userId);
 
     return res.json({
       providers: buildProviderState(user?.providerCredentials),
@@ -101,18 +100,18 @@ router.get("/providers/:provider/key", async (req, res) => {
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    const clerkId = getClerkId(req);
+    const userId = getUserId(req);
     const provider = normalizeProvider(req.params.provider);
 
-    if (!clerkId) {
-      return res.status(400).json({ message: "clerkId is required." });
+    if (!userId) {
+      return res.status(400).json({ message: "userId is required." });
     }
 
     if (!SUPPORTED_PROVIDERS.includes(provider)) {
       return res.status(400).json({ message: "Unsupported provider." });
     }
 
-    const user = await loadUser(clerkId);
+    const user = await loadUser(userId);
     const credential = user?.providerCredentials?.[provider];
 
     if (!credential?.configured || !credential.encryptedKey) {
@@ -133,12 +132,12 @@ router.get("/providers/:provider/key", async (req, res) => {
 
 router.post("/providers", async (req, res) => {
   try {
-    const clerkId = getClerkId(req);
+    const userId = getUserId(req);
     const provider = normalizeProvider(req.body?.provider);
     const apiKey = String(req.body?.apiKey || "").trim();
 
-    if (!clerkId) {
-      return res.status(400).json({ message: "clerkId is required." });
+    if (!userId) {
+      return res.status(400).json({ message: "userId is required." });
     }
 
     if (!provider) {
@@ -153,7 +152,7 @@ router.post("/providers", async (req, res) => {
       return res.status(400).json({ message: "apiKey is required." });
     }
 
-    const credential = await saveCredential(clerkId, provider, apiKey);
+    const credential = await saveCredential(userId, provider, apiKey);
 
     return res.status(200).json({
       provider,
@@ -170,12 +169,12 @@ router.post("/providers", async (req, res) => {
 
 router.put("/providers/:provider", async (req, res) => {
   try {
-    const clerkId = getClerkId(req);
+    const userId = getUserId(req);
     const provider = normalizeProvider(req.params.provider);
     const apiKey = String(req.body?.apiKey || "").trim();
 
-    if (!clerkId) {
-      return res.status(400).json({ message: "clerkId is required." });
+    if (!userId) {
+      return res.status(400).json({ message: "userId is required." });
     }
 
     if (!provider) {
@@ -190,7 +189,7 @@ router.put("/providers/:provider", async (req, res) => {
       return res.status(400).json({ message: "apiKey is required." });
     }
 
-    const credential = await saveCredential(clerkId, provider, apiKey);
+    const credential = await saveCredential(userId, provider, apiKey);
 
     return res.json({
       provider,
@@ -207,19 +206,19 @@ router.put("/providers/:provider", async (req, res) => {
 
 router.delete("/providers/:provider", async (req, res) => {
   try {
-    const clerkId = getClerkId(req);
+    const userId = getUserId(req);
     const provider = normalizeProvider(req.params.provider);
 
-    if (!clerkId) {
-      return res.status(400).json({ message: "clerkId is required." });
+    if (!userId) {
+      return res.status(400).json({ message: "userId is required." });
     }
 
     if (!SUPPORTED_PROVIDERS.includes(provider)) {
       return res.status(400).json({ message: "Unsupported provider." });
     }
 
-    await User.findOneAndUpdate(
-      { clerkId },
+    await User.findByIdAndUpdate(
+      userId,
       {
         $unset: {
           [`providerCredentials.${provider}`]: 1,
