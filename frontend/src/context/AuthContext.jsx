@@ -13,7 +13,8 @@ export const AuthProvider = ({ children }) => {
   const router = useRouter();
 
   const getBackendUrl = () => {
-    return process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || "http://localhost:8001";
+    const url = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || "http://localhost:8001";
+    return url.replace(/\/$/, "");
   };
 
   useEffect(() => {
