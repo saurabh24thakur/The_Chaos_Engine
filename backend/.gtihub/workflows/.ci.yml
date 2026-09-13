@@ -1,0 +1,49 @@
+name: Chaos Engine CI & Test Suite
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test-auth:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run Auth Tests
+        run: |
+          cd backend/auth
+          npm ci
+          npm test
+
+  test-orchestrator:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run Orchestrator & LangGraph Tests
+        run: |
+          cd backend/orchestrator
+          npm ci
+          npm test
+        env:
+          GEMINI_API_KEY: 'test-key'
+
+  test-gateway:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run Gateway Tests
+        run: |
+          cd backend/gateway
+          npm ci
+          npm test
